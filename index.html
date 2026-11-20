@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Ma Bibliothèque</title>
+<meta name="description" content="Catalogue de mes livres">
+<meta name="theme-color" content="#b4462f">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Bibliothèque">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f6f1e7;--card:#fffdf8;--ink:#2a2420;--muted:#7a6f63;--line:#e6dccb;
+  --accent:#b4462f;--accent-soft:#f4e1d9;--chip:#efe6d6;--ok:#3d7a55;--warn:#b7791f;
+}
+@media (prefers-color-scheme:dark){
+  :root{--bg:#1c1916;--card:#26221e;--ink:#f1e9dc;--muted:#a89c8c;--line:#3a342d;
+  --accent:#e0775c;--accent-soft:#3d2a23;--chip:#332d27;--ok:#7fc29a;--warn:#e3b05b;}
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,system-ui,sans-serif;font-size:15px;-webkit-tap-highlight-color:transparent}
+header{position:sticky;top:0;z-index:5;background:var(--bg);padding:calc(14px + env(safe-area-inset-top)) 16px 8px;border-bottom:1px solid var(--line)}
+h1{font-family:Fraunces,Georgia,serif;font-weight:700;font-size:24px;margin:0 0 2px;letter-spacing:-.3px}
+.sub{color:var(--muted);font-size:13px;margin-bottom:10px}
+.search{display:flex;gap:8px}
+.search input{flex:1;padding:11px 14px;border-radius:12px;border:1px solid var(--line);background:var(--card);color:var(--ink);font-size:16px;outline:none}
+.search input:focus{border-color:var(--accent)}
+.tabs{display:flex;gap:6px;overflow-x:auto;padding:10px 0 2px;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tab{flex:none;padding:7px 12px;border-radius:999px;background:var(--chip);border:0;color:var(--ink);font:500 13px Inter,sans-serif;cursor:pointer}
+.tab.on{background:var(--accent);color:#fff}
+main{padding:12px 16px 100px;max-width:760px;margin:0 auto}
+.filterbar{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
+.active-filter{display:inline-flex;align-items:center;gap:6px;background:var(--accent-soft);color:var(--accent);padding:6px 10px;border-radius:999px;font-size:13px;font-weight:600;border:0;cursor:pointer}
+.group-list{display:flex;flex-direction:column;gap:6px}
+.group{display:flex;justify-content:space-between;align-items:center;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 14px;cursor:pointer;text-align:left;color:var(--ink);font:inherit;width:100%}
+.group b{font-weight:600}
+.count{background:var(--chip);border-radius:999px;padding:2px 9px;font-size:12px;color:var(--muted);font-weight:600}
+.book{display:flex;gap:12px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:8px;cursor:pointer;width:100%;text-align:left;color:var(--ink);font:inherit}
+.spine{flex:none;width:8px;border-radius:4px}
+.book .t{font-family:Fraunces,Georgia,serif;font-weight:500;font-size:16.5px;line-height:1.25}
+.book .a{color:var(--muted);font-size:13.5px;margin-top:2px}
+.tags{display:flex;flex-wrap:wrap;gap:4px;margin-top:6px}
+.tag{font-size:11.5px;padding:2px 8px;border-radius:999px;background:var(--chip);color:var(--muted)}
+.tag.age{background:var(--accent-soft);color:var(--accent)}
+.tag.v{background:transparent;border:1px dashed var(--warn);color:var(--warn)}
+.sorter{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;color:var(--muted);font-size:13px}
+.sorter select{background:var(--card);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:5px 8px;font:inherit;font-size:13px}
+.fab{position:fixed;right:18px;bottom:calc(22px + env(safe-area-inset-bottom));width:56px;height:56px;border-radius:50%;background:var(--accent);color:#fff;border:0;font-size:30px;line-height:1;box-shadow:0 6px 18px rgba(0,0,0,.25);cursor:pointer;z-index:6}
+.sheet-bg{position:fixed;inset:0;background:rgba(0,0,0,.4);display:none;z-index:10}
+.sheet{position:fixed;left:0;right:0;bottom:0;max-height:88vh;overflow:auto;background:var(--card);border-radius:20px 20px 0 0;padding:18px 18px calc(28px + env(safe-area-inset-bottom));z-index:11;transform:translateY(100%);transition:transform .25s ease;max-width:760px;margin:0 auto}
+.sheet.open{transform:none}
+.sheet h2{font-family:Fraunces,Georgia,serif;font-size:22px;margin:4px 0 4px;line-height:1.2}
+.grab{width:40px;height:4px;border-radius:2px;background:var(--line);margin:0 auto 10px}
+dl{display:grid;grid-template-columns:110px 1fr;gap:8px 10px;margin:14px 0}
+dt{color:var(--muted);font-size:13px}
+dd{margin:0}
+dd a{color:var(--accent);text-decoration:none;font-weight:500}
+.row{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.btn{flex:1;padding:12px;border-radius:12px;border:1px solid var(--line);background:var(--chip);color:var(--ink);font:600 14px Inter,sans-serif;cursor:pointer;min-width:120px}
+.btn.primary{background:var(--accent);color:#fff;border-color:var(--accent)}
+.btn.danger{color:var(--accent)}
+label{display:block;font-size:12.5px;color:var(--muted);margin:10px 0 4px}
+.f{width:100%;padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--ink);font:inherit;font-size:16px}
+textarea.f{min-height:120px;font-family:ui-monospace,monospace;font-size:12px}
+.empty{text-align:center;color:var(--muted);padding:40px 10px}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px}
+.stat{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px;text-align:center}
+.stat b{display:block;font-family:Fraunces,serif;font-size:22px}
+.stat span{font-size:11.5px;color:var(--muted)}
+.toast{position:fixed;left:50%;bottom:90px;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:10px;font-size:13.5px;opacity:0;transition:opacity .2s;z-index:20;pointer-events:none}
+.toast.show{opacity:1}
+.sync{font-size:11.5px;color:var(--muted)}
+</style>
+</head>
+<body>
+<header>
+  <h1>Ma Bibliothèque</h1>
+  <div class="sub"><span id="total"></span> · <span class="sync" id="sync">enregistré sur ce téléphone</span></div>
+  <div class="search"><input id="q" type="search" placeholder="Titre, auteur, éditeur…" autocomplete="off"></div>
+  <div class="tabs" id="tabs"></div>
+</header>
+<main id="main"></main>
+<button class="fab" id="add" aria-label="Ajouter un livre">+</button>
+<div class="sheet-bg" id="bg"></div>
+<div class="sheet" id="sheet"></div>
+<div class="toast" id="toast"></div>
+
+<script>
+// [titre, auteur, éditeur, collection, genre, âge, photo, note]
+const BASE = [
+["Dictionnaire Larousse de poche","Larousse","Larousse","","Dictionnaire / Référence","Tous âges",1,""],
+["Lorenzaccio","Alfred de Musset","GF Flammarion","Étonnants Classiques","Théâtre","15 ans et +",1,""],
+["Petit dictionnaire français-anglais / anglais-français","Larousse","Larousse","","Langues","Tous âges",1,""],
+["La Mort du roi Tsongor","Laurent Gaudé","Le Livre de Poche","","Roman","15 ans et +",1,"Prix Goncourt des lycéens"],
+["Le Collier rouge","Jean-Christophe Rufin","Folio","","Roman","13-16 ans",1,""],
+["Trois contes","Gustave Flaubert","Librio","","Nouvelles / Contes","15 ans et +",1,""],
+["Double meurtre à l'abbaye","Jacqueline Mirande","Flammarion Jeunesse","","Policier / Thriller","10-13 ans",1,""],
+["Cris","Laurent Gaudé","Le Livre de Poche","","Roman","15 ans et +",1,""],
+["Paroles","Jacques Prévert","Folio","Folio+ Collège","Poésie","11-15 ans",1,""],
+["Signé Stargirl","Jerry Spinelli","Flammarion","Tribal","Littérature jeunesse","11-15 ans",1,""],
+["Perceval ou le Conte du Graal","Chrétien de Troyes","Hatier","Classiques & Cie Collège","Roman de chevalerie","10-13 ans",1,""],
+["Fables, livres I à VI","Jean de La Fontaine","Bordas","Classiques Bordas","Poésie","10-13 ans",1,"Éditeur à vérifier"],
+["L'Odyssée","Homère","Le Livre de Poche Jeunesse","","Épopée / Mythologie","10-13 ans",1,"Version abrégée"],
+["La Conjugaison – 12 000 verbes","Bescherelle","Hatier","Bescherelle","Dictionnaire / Référence","Tous âges",1,""],
+["Les Mille et Une Nuits","Anonyme","Hatier","Classiques & Cie Collège","Nouvelles / Contes","10-13 ans",1,""],
+["Into the Wild","Jon Krakauer","10/18","","Récit / Témoignage","15 ans et +",1,""],
+["Ulysse et l'Odyssée","Homère (adaptation)","Le Livre de Poche Jeunesse","","Épopée / Mythologie","8-12 ans",1,""],
+["Bescherelle Junior – Grammaire, orthographe, vocabulaire","Bescherelle","Hatier","Bescherelle","Dictionnaire / Référence","8-12 ans",1,""],
+["21 contes des origines de la Terre","Brigitte Heller","Flammarion Jeunesse","","Nouvelles / Contes","8-12 ans",1,""],
+["Le Médecin malgré lui","Molière","Hachette","Bibliocollège","Théâtre","10-13 ans",1,""],
+["Vendredi ou la vie sauvage","Michel Tournier","Gallimard Jeunesse","Folio Junior","Roman","10-13 ans",1,""],
+["Andromaque","Jean Racine","Librio","","Théâtre","15 ans et +",1,""],
+["Les Caractères, livres V à X","Jean de La Bruyère","Belin / Gallimard","Classico Lycée","Essai / Moralistes","15 ans et +",1,""],
+["L'Odyssée d'Homère","Murielle Szac (adaptation)","Bayard Jeunesse","","Épopée / Mythologie","8-12 ans",1,"Éditeur à vérifier"],
+["L'anglais du voyageur pour les Nuls","Claude Raimond","First","Pour les Nuls","Langues","Adulte",1,""],
+["Lettre au père","Franz Kafka","Folio","Folio 2 €","Récit / Témoignage","15 ans et +",1,""],
+["Calma, embrouille & débrouille","Barry Jonsberg","Flammarion","Tribal","Littérature jeunesse","13-16 ans",2,""],
+["Qui est Charlie ? Sociologie d'une crise religieuse","Emmanuel Todd","Seuil","","Essai / Sciences humaines","Adulte",2,""],
+["Filles de la mer","Mary Lynn Bracht","Pocket","","Roman","Adulte",2,""],
+["Et si c'était par la fin que tout commençait…","À vérifier","À vérifier","","Littérature jeunesse","13-16 ans",2,"Auteur et éditeur illisibles sur la photo"],
+["La Princesse de Clèves","Madame de La Fayette","Folio","Folio classique","Roman","15 ans et +",2,""],
+["Rhinocéros","Eugène Ionesco","Folio","","Théâtre","15 ans et +",2,""],
+["Cendrillon","Joël Pommerat","Actes Sud","Actes Sud-Papiers","Théâtre","11-15 ans",2,""],
+["Fahrenheit 451","Ray Bradbury","Denoël","Présence du futur","Science-fiction / Fantastique","13-16 ans",2,""],
+["Louison et Monsieur Molière","Marie-Christine Helgerson","Flammarion Jeunesse","","Littérature jeunesse","10-13 ans",2,"Exemplaire 1"],
+["Louison et Monsieur Molière","Marie-Christine Helgerson","Flammarion Jeunesse","","Littérature jeunesse","10-13 ans",2,"Exemplaire 2 (doublon)"],
+["Histoire du chevalier des Grieux et de Manon Lescaut","Abbé Prévost","Le Livre de Poche","Les Classiques de Poche","Roman","15 ans et +",2,""],
+["Le Cid","Pierre Corneille","Hachette","Les Classiques Hachette","Théâtre","13-16 ans",2,""],
+["Le Tyran d'Axilane","Michel Grimaud","Gallimard Jeunesse","Folio Junior","Science-fiction / Fantastique","10-13 ans",2,""],
+["L'homme qui plantait des arbres","Jean Giono","Gallimard Jeunesse","Folio Cadet","Nouvelles / Contes","8-12 ans",2,"Illustré par Willi Glasauer"],
+["Dix petits nègres (Ils étaient dix)","Agatha Christie","Le Livre de Poche","","Policier / Thriller","13-16 ans",2,"Titre actuel : Ils étaient dix"],
+["Celle qui marche la nuit","Delphine Bertholon","Le Livre de Poche Jeunesse","","Science-fiction / Fantastique","13-16 ans",2,""],
+["La Dispute, suivi de L'Île des esclaves","Marivaux","Librio","Théâtre","Théâtre","15 ans et +",2,""],
+["Juste la fin du monde","Jean-Luc Lagarce","Les Solitaires Intempestifs","","Théâtre","15 ans et +",2,"Au programme du bac"],
+["L'Or et la Boue","Christophe Lambert","Nathan","","Roman historique","11-15 ans",2,"Guerre 14-18"],
+["16 métamorphoses d'Ovide","Françoise Rachmuhl","Flammarion","Castor Poche","Épopée / Mythologie","10-13 ans",2,""],
+["La Princesse de Clèves","Madame de La Fayette","Librio","","Roman","15 ans et +",2,"2e édition (doublon de titre)"],
+["Un roi sans divertissement","Jean Giono","Gallimard","La bibliothèque Gallimard","Roman","15 ans et +",2,""],
+["Yvain ou le Chevalier au lion","Chrétien de Troyes","GF Flammarion","Étonnants Classiques","Roman de chevalerie","10-13 ans",2,""],
+["Madame Bovary","Gustave Flaubert","Le Livre de Poche","","Roman","15 ans et +",2,""],
+["Andromaque","Jean Racine","Hachette","Les Classiques Hachette","Théâtre","15 ans et +",2,""],
+["Les Fleurs du mal","Charles Baudelaire","Belin / Gallimard","Classico Lycée","Poésie","15 ans et +",2,""],
+["Ceux qui avaient choisi","Charlotte Delbo","GF Flammarion","Étonnants Classiques","Théâtre","13-16 ans",2,""],
+["La Cantatrice chauve","Eugène Ionesco","Folio","Folio Théâtre","Théâtre","13-16 ans",2,""],
+["Bel-Ami","Guy de Maupassant","Hatier","Classiques Hatier","Roman","15 ans et +",3,""],
+["Le Malade imaginaire","Molière","Hatier","Classiques & Cie Lycée","Théâtre","13-16 ans",3,""],
+["Sortilège","Alex Flinn","Hachette","Black Moon","Science-fiction / Fantastique","13-16 ans",3,""],
+["Cahier d'un retour au pays natal","Aimé Césaire","Présence Africaine","Poésie","Poésie","15 ans et +",3,""],
+["Boule de suif","Guy de Maupassant","Le Livre de Poche","Les Classiques de Poche","Nouvelles / Contes","13-16 ans",3,""],
+["Cuentos de la selva para los niños","Horacio Quiroga","Edaf","Biblioteca Edaf Juvenil","Langues","13-16 ans",3,"En espagnol"],
+["Jun-Ling, une enfance chinoise","Adeline Yen Mah","Flammarion","","Récit / Témoignage","11-15 ans",3,""],
+["La Place","Annie Ernaux","Folio","","Récit / Témoignage","15 ans et +",3,""],
+["Contes de la bécasse","Guy de Maupassant","Le Livre de Poche","Les Classiques de Poche","Nouvelles / Contes","13-16 ans",3,""],
+["Pierre et Jean","Guy de Maupassant","Librio","","Roman","15 ans et +",3,"Exemplaire 1"],
+["Edmond","Alexis Michalik","Magnard","Classiques & Contemporains","Théâtre","13-16 ans",3,""],
+["Déclaration des droits de la femme et de la citoyenne","Olympe de Gouges","Belin / Gallimard","Classico Lycée","Essai / Sciences humaines","15 ans et +",3,"Au programme du bac"],
+["Le Horla, suivi de L'Héritage","Guy de Maupassant","Librio","","Science-fiction / Fantastique","13-16 ans",3,""],
+["L'Avare","Molière","Hachette","Bibliocollège","Théâtre","11-15 ans",3,""],
+["Le Tartuffe","Molière","Larousse","Petits Classiques Larousse","Théâtre","13-16 ans",3,""],
+["Tant que nous sommes vivants","Anne-Laure Bondoux","Gallimard Jeunesse","Pôle Fiction","Littérature jeunesse","13-16 ans",3,""],
+["Le Papa de Simon et autres nouvelles","Guy de Maupassant","GF Flammarion","Étonnants Classiques","Nouvelles / Contes","11-15 ans",3,""],
+["L'École des femmes, suivi de La Critique de l'École des femmes","Molière","Folio","Folio Théâtre","Théâtre","15 ans et +",3,"Éditeur à vérifier"],
+["Les Fourberies de Scapin","Molière","Hachette","Bibliocollège","Théâtre","11-15 ans",3,""],
+["Ourika","Madame de Duras","GF Flammarion","","Roman","15 ans et +",3,""],
+["Les Essais – « Des cannibales » et « Des coches »","Montaigne","Nathan","Carrés classiques","Essai / Moralistes","15 ans et +",3,"Au programme du bac"],
+["Diccionario de bolsillo del español actual","SGEL","SGEL","","Langues","Tous âges",3,"Dictionnaire d'espagnol"],
+["Pierre et Jean","Guy de Maupassant","Librio","","Roman","15 ans et +",3,"Exemplaire 2 (doublon)"],
+["Les Fourberies de Scapin","Molière","Librio","Théâtre","Théâtre","11-15 ans",3,"2e édition"],
+["Amour et Psyché","Apulée","GF Flammarion","Étonnants Classiques","Épopée / Mythologie","11-15 ans",3,""],
+["Le Mariage de Figaro","Beaumarchais","Le Livre de Poche","Le Théâtre de Poche","Théâtre","15 ans et +",3,""],
+["Bel-Ami","Guy de Maupassant","Hachette","Bibliolycée","Roman","15 ans et +",3,"2e édition"],
+["Le Médecin malgré lui","Molière","Hachette","Bibliocollège","Théâtre","10-13 ans",3,"2e exemplaire"],
+["La Légende des siècles","Victor Hugo","GF Flammarion","Étonnants Classiques","Poésie","13-16 ans",4,""],
+["Manon Lescaut","Abbé Prévost","GF Flammarion","Étonnants Classiques","Roman","15 ans et +",4,"2e édition"],
+["Le Dieu du carnage","Yasmina Reza","Magnard","Classiques & Contemporains","Théâtre","15 ans et +",4,""],
+["Entretiens d'évaluation","Michel Lora, Pierre Mirallès","Éditions d'Organisation","Livres Outils","Développement pro / Psychologie","Adulte",4,""],
+["Thérèse Raquin","Émile Zola","Folio","Folio classique","Roman","15 ans et +",4,""],
+["Le Dernier Jour d'un condamné","Victor Hugo","Belin / Gallimard","Classico Lycée","Roman","13-16 ans",4,""],
+["Le Voyage de Fulmir","Thomas Lavachery","L'école des loisirs","","Littérature jeunesse","10-13 ans",4,""],
+["Leurs gestes disent tout haut ce qu'ils pensent tout bas","Stephen Bunard","À vérifier","","Développement pro / Psychologie","Adulte",4,"Éditeur à vérifier"],
+["Les Survivants de Troie – Le Prince sans couronne","Michel Honaker","Flammarion Jeunesse","","Épopée / Mythologie","10-13 ans",4,""],
+["Gorgias","Platon","Librio","Philosophie","Essai / Philosophie","15 ans et +",4,""],
+["Zadig","Voltaire","Belin / Gallimard","Classico Lycée","Conte philosophique","13-16 ans",4,""],
+["À l'ouest rien de nouveau","Erich Maria Remarque","Le Livre de Poche","","Roman historique","15 ans et +",4,""],
+["Thérèse Raquin","Émile Zola","Larousse","Petits Classiques Larousse","Roman","15 ans et +",4,"2e édition"],
+["Vanina Vanini · La Vendetta · Nantas","Stendhal, Balzac, Zola","Le Livre de Poche","","Nouvelles / Contes","13-16 ans",4,"Éditeur à vérifier"],
+["La Vigie","Thierry Jonquet","GF Flammarion","Étonnants Classiques","Policier / Thriller","13-16 ans",4,""],
+["Le Chuchoteur","Donato Carrisi","Calmann-Lévy","","Policier / Thriller","Adulte",4,""],
+["Au Bonheur des Dames","Émile Zola","Larousse","Petits Classiques Larousse","Roman","15 ans et +",4,""],
+["Arria Marcella · Le Pied de momie · La Vénus d'Ille…","Gautier, Mérimée, Poe","Le Livre de Poche","","Science-fiction / Fantastique","13-16 ans",4,"Recueil de nouvelles fantastiques"],
+["Ruy Blas","Victor Hugo","Hachette","Bibliolycée","Théâtre","15 ans et +",4,""],
+["L'Ingénu","Voltaire","Le Livre de Poche","Les Classiques de Poche","Conte philosophique","13-16 ans",4,"Éditeur à vérifier"],
+["Aurais-je été résistant ou bourreau ?","Pierre Bayard","Éditions de Minuit","Paradoxe","Essai / Sciences humaines","Adulte",4,""],
+["Andromaque","Jean Racine","Hachette","Bibliolycée","Théâtre","15 ans et +",4,"3e édition"],
+["Candide","Voltaire","Belin / Gallimard","Classico Lycée","Conte philosophique","13-16 ans",4,""],
+["Micromégas · La Princesse de Babylone","Voltaire","Hachette","Bibliolycée","Conte philosophique","13-16 ans",4,""]
+].map((r,i)=>({id:"b"+(i+1),titre:r[0],auteur:r[1],editeur:r[2],collection:r[3],genre:r[4],age:r[5],photo:r[6],note:r[7]}));
+
+const AGE_ORDER=["8-12 ans","10-13 ans","11-15 ans","13-16 ans","15 ans et +","Adulte","Tous âges"];
+const DIMS=[["all","Tous"],["genre","Genre"],["auteur","Auteur"],["editeur","Éditeur"],["age","Âge"],["collection","Collection"],["stats","Stats"]];
+const LABEL={titre:"Titre",auteur:"Auteur",editeur:"Éditeur",collection:"Collection",genre:"Genre",age:"Âge conseillé",note:"Note",photo:"Photo n°"};
+const COLORS=["#b4462f","#3d7a55","#2f5f8a","#b7791f","#7a4a8c","#2c7c7c","#a2475e","#5b6b2e","#8a5a2f","#475569"];
+
+let overrides={}; // id -> book | {deleted:true}
+let state={dim:"all",filter:null,q:"",sort:"titre"};
+
+function lsGet(){try{return JSON.parse(localStorage.getItem("biblio_overrides")||"{}")}catch(e){return {}}}
+function lsSet(){try{localStorage.setItem("biblio_overrides",JSON.stringify(overrides))}catch(e){}}
+overrides=lsGet();
+
+function books(){
+  const map=new Map(BASE.map(b=>[b.id,b]));
+  for(const [id,o] of Object.entries(overrides)){
+    if(o&&o.deleted) map.delete(id); else if(o) map.set(id,{...map.get(id),...o,id});
+  }
+  return [...map.values()];
+}
+const norm=s=>(s||"").toString().normalize("NFD").replace(/[̀-ͯ]/g,"").toLowerCase();
+function colorFor(s){let h=0;for(const c of s||"")h=(h*31+c.charCodeAt(0))>>>0;return COLORS[h%COLORS.length]}
+const esc=s=>(s??"").toString().replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+
+function filtered(){
+  const q=norm(state.q);
+  return books().filter(b=>{
+    if(state.filter && (b[state.filter.k]||"—")!==state.filter.v) return false;
+    if(!q) return true;
+    return norm([b.titre,b.auteur,b.editeur,b.collection,b.genre,b.age,b.note].join(" ")).includes(q);
+  });
+}
+function sortBooks(list){
+  const k=state.sort;
+  return list.sort((a,b)=>{
+    if(k==="age") return AGE_ORDER.indexOf(a.age)-AGE_ORDER.indexOf(b.age)||a.titre.localeCompare(b.titre,"fr");
+    return (a[k]||"").localeCompare(b[k]||"","fr")||a.titre.localeCompare(b.titre,"fr");
+  });
+}
+
+function renderTabs(){
+  document.getElementById("tabs").innerHTML=DIMS.map(([k,l])=>`<button class="tab ${state.dim===k&&!state.filter?"on":""}" data-dim="${k}">${l}</button>`).join("");
+}
+function bookCard(b){
+  const v=/vérifier/i.test(b.note||"")||b.auteur==="À vérifier";
+  return `<button class="book" data-id="${b.id}"><span class="spine" style="background:${colorFor(b.genre)}"></span><span style="flex:1;min-width:0">
+  <div class="t">${esc(b.titre)}</div><div class="a">${esc(b.auteur)} · ${esc(b.editeur)}</div>
+  <div class="tags"><span class="tag">${esc(b.genre)}</span><span class="tag age">${esc(b.age)}</span>${b.collection?`<span class="tag">${esc(b.collection)}</span>`:""}${v?`<span class="tag v">à vérifier</span>`:""}</div></span></button>`;
+}
+function render(){
+  renderTabs();
+  const all=books();
+  document.getElementById("total").textContent=all.length+" livres";
+  const m=document.getElementById("main");
+  let html="";
+  if(state.filter){
+    html+=`<div class="filterbar"><button class="active-filter" id="clearf">${esc(LABEL[state.filter.k]||state.filter.k)} : ${esc(state.filter.v)} ✕</button></div>`;
+  }
+  if(state.dim==="stats"&&!state.filter&&!state.q){ m.innerHTML=statsView(all); return; }
+  if(state.dim!=="all"&&!state.filter&&!state.q){
+    const k=state.dim,groups={};
+    for(const b of all){const g=b[k]||"—";groups[g]=(groups[g]||0)+1}
+    let keys=Object.keys(groups);
+    if(k==="age") keys.sort((a,b)=>AGE_ORDER.indexOf(a)-AGE_ORDER.indexOf(b));
+    else keys.sort((a,b)=>groups[b]-groups[a]||a.localeCompare(b,"fr"));
+    html+=`<div class="sorter">${keys.length} ${esc(DIMS.find(d=>d[0]===k)[1].toLowerCase())}s</div><div class="group-list">`+
+      keys.map(g=>`<button class="group" data-k="${k}" data-v="${esc(g)}"><b>${esc(g)}</b><span class="count">${groups[g]}</span></button>`).join("")+`</div>`;
+    m.innerHTML=html;return;
+  }
+  const list=sortBooks(filtered());
+  html+=`<div class="sorter"><span>${list.length} résultat${list.length>1?"s":""}</span><label style="margin:0">Trier : <select id="sort">
+  ${[["titre","Titre"],["auteur","Auteur"],["editeur","Éditeur"],["genre","Genre"],["age","Âge"]].map(([v,l])=>`<option value="${v}" ${state.sort===v?"selected":""}>${l}</option>`).join("")}</select></label></div>`;
+  html+=list.length?list.map(bookCard).join(""):`<div class="empty">Aucun livre trouvé.</div>`;
+  m.innerHTML=html;
+}
+function statsView(all){
+  const count=k=>{const o={};all.forEach(b=>o[b[k]]=(o[b[k]]||0)+1);return o};
+  const authors=Object.keys(count("auteur")).length, eds=Object.keys(count("editeur")).length;
+  const titles={};all.forEach(b=>{const t=norm(b.titre);titles[t]=(titles[t]||[]).concat(b)});
+  const dups=Object.values(titles).filter(a=>a.length>1);
+  const verif=all.filter(b=>/vérifier/i.test(b.note||"")||b.auteur==="À vérifier");
+  const bar=(o,order)=>{const keys=order?order.filter(k=>o[k]):Object.keys(o).sort((a,b)=>o[b]-o[a]);const max=Math.max(...Object.values(o));
+    return keys.map(k=>`<button class="group" data-k="${order?"age":"genre"}" data-v="${esc(k)}" style="flex-direction:column;align-items:stretch;gap:6px"><span style="display:flex;justify-content:space-between"><b>${esc(k)}</b><span class="count">${o[k]}</span></span><span style="height:6px;border-radius:3px;background:var(--chip)"><span style="display:block;height:6px;border-radius:3px;width:${o[k]/max*100}%;background:${order?"var(--accent)":colorFor(k)}"></span></span></button>`).join("")};
+  return `<div class="stats"><div class="stat"><b>${all.length}</b><span>livres</span></div><div class="stat"><b>${authors}</b><span>auteurs</span></div><div class="stat"><b>${eds}</b><span>éditeurs</span></div></div>
+  <h3 style="font-family:Fraunces,serif;margin:16px 0 8px">Par âge</h3><div class="group-list">${bar(count("age"),AGE_ORDER)}</div>
+  <h3 style="font-family:Fraunces,serif;margin:18px 0 8px">Par genre</h3><div class="group-list">${bar(count("genre"))}</div>
+  <h3 style="font-family:Fraunces,serif;margin:18px 0 8px">Titres en plusieurs exemplaires (${dups.length})</h3>${dups.map(a=>`<div class="sub">• ${esc(a[0].titre)} — ${a.length}× (${a.map(b=>esc(b.editeur)).join(", ")})</div>`).join("")}
+  <h3 style="font-family:Fraunces,serif;margin:18px 0 8px">À vérifier (${verif.length})</h3>${verif.map(bookCard).join("")}
+  <h3 style="font-family:Fraunces,serif;margin:18px 0 8px">Sauvegarde</h3>
+  <div class="sub">Tes modifications sont enregistrées sur ce téléphone. Pense à copier la liste de temps en temps pour la garder en lieu sûr.</div>
+  <div class="row"><button class="btn" id="exp">Copier la liste (JSON)</button><button class="btn" id="imp">Importer</button></div>
+  <div class="row"><button class="btn" id="csv">Copier pour Excel (CSV)</button></div>`;
+}
+
+// ---- sheet
+const sheet=document.getElementById("sheet"),bg=document.getElementById("bg");
+function openSheet(html){sheet.innerHTML=`<div class="grab"></div>`+html;bg.style.display="block";requestAnimationFrame(()=>sheet.classList.add("open"))}
+function closeSheet(){sheet.classList.remove("open");setTimeout(()=>{bg.style.display="none"},250)}
+bg.onclick=closeSheet;
+function detail(id){
+  const b=books().find(x=>x.id===id);if(!b)return;
+  const link=(k)=>b[k]?`<a href="#" data-k="${k}" data-v="${esc(b[k])}">${esc(b[k])}</a>`:"—";
+  openSheet(`<div class="tags"><span class="tag" style="background:${colorFor(b.genre)};color:#fff">${esc(b.genre)}</span><span class="tag age">${esc(b.age)}</span></div>
+  <h2>${esc(b.titre)}</h2><div class="sub">${esc(b.auteur)}</div>
+  <dl><dt>Auteur</dt><dd>${link("auteur")}</dd><dt>Éditeur</dt><dd>${link("editeur")}</dd><dt>Collection</dt><dd>${link("collection")}</dd>
+  <dt>Genre</dt><dd>${link("genre")}</dd><dt>Âge conseillé</dt><dd>${link("age")}</dd>${b.note?`<dt>Note</dt><dd>${esc(b.note)}</dd>`:""}${b.photo?`<dt>Photo</dt><dd>n° ${esc(b.photo)}</dd>`:""}</dl>
+  <div class="row"><button class="btn primary" data-edit="${b.id}">Modifier</button><button class="btn danger" data-del="${b.id}">Supprimer</button></div>`);
+}
+function datalist(k){return `<datalist id="dl-${k}">${[...new Set(books().map(b=>b[k]).filter(Boolean))].sort((a,b)=>a.localeCompare(b,"fr")).map(v=>`<option value="${esc(v)}">`).join("")}</datalist>`}
+function editForm(id){
+  const b=id?books().find(x=>x.id===id):{titre:"",auteur:"",editeur:"",collection:"",genre:"",age:"",note:""};
+  const fld=(k,dl)=>`<label>${LABEL[k]}</label><input class="f" name="${k}" value="${esc(b[k])}" ${dl?`list="dl-${k}"`:""}>${dl?datalist(k):""}`;
+  openSheet(`<h2>${id?"Modifier":"Ajouter un livre"}</h2><form id="ef">${fld("titre")}${fld("auteur",1)}${fld("editeur",1)}${fld("collection",1)}${fld("genre",1)}
+  <label>Âge conseillé</label><select class="f" name="age">${AGE_ORDER.map(a=>`<option ${b.age===a?"selected":""}>${a}</option>`).join("")}</select>${fld("note")}
+  <div class="row"><button type="button" class="btn" id="cancel">Annuler</button><button class="btn primary" type="submit">Enregistrer</button></div></form>`);
+  document.getElementById("cancel").onclick=closeSheet;
+  document.getElementById("ef").onsubmit=e=>{e.preventDefault();const fd=Object.fromEntries(new FormData(e.target));
+    if(!fd.titre.trim()){toast("Le titre est obligatoire");return}
+    const nid=id||("u"+Date.now().toString(36));saveOverride(nid,{...fd,photo:b.photo||""});closeSheet();toast(id?"Modifié":"Livre ajouté");};
+}
+function confirmDel(id){
+  const b=books().find(x=>x.id===id);
+  openSheet(`<h2>Supprimer ?</h2><div class="sub">« ${esc(b.titre)} » sera retiré de ta bibliothèque.</div><div class="row"><button class="btn" id="cancel">Annuler</button><button class="btn primary" id="okdel">Supprimer</button></div>`);
+  document.getElementById("cancel").onclick=closeSheet;
+  document.getElementById("okdel").onclick=()=>{saveOverride(id,{deleted:true});closeSheet();toast("Supprimé")};
+}
+
+// ---- persistence (stockage sur le téléphone)
+function saveOverride(id,data){overrides[id]=data;lsSet();render()}
+if(navigator.storage&&navigator.storage.persist){navigator.storage.persist().catch(()=>{})}
+
+// ---- export / import
+async function copy(text,msg){try{await navigator.clipboard.writeText(text);toast(msg)}catch(e){openSheet(`<h2>Copie manuelle</h2><textarea class="f">${esc(text)}</textarea>`)}}
+function exportJSON(){copy(JSON.stringify(books(),null,1),"Liste copiée (JSON)")}
+function exportCSV(){const ks=["titre","auteur","editeur","collection","genre","age","note"];
+  const rows=[ks.map(k=>LABEL[k]).join(";")].concat(books().map(b=>ks.map(k=>`"${(b[k]||"").toString().replace(/"/g,'""')}"`).join(";")));copy(rows.join("\n"),"Copié – colle dans Excel")}
+function importForm(){openSheet(`<h2>Importer</h2><div class="sub">Colle une liste JSON exportée depuis cette appli (ou depuis la version Claude). Les livres existants (même identifiant) seront mis à jour, et ceux absents de la liste seront retirés.</div><textarea class="f" id="impt"></textarea><div class="row"><button class="btn" id="cancel">Annuler</button><button class="btn primary" id="doimp">Importer</button></div>`);
+  document.getElementById("cancel").onclick=closeSheet;
+  document.getElementById("doimp").onclick=()=>{try{const arr=JSON.parse(document.getElementById("impt").value);if(!Array.isArray(arr))throw 0;
+    const next={},seen=new Set();let n=0;
+    for(const b of arr){if(!b||!b.titre)continue;const id=b.id||("u"+Date.now().toString(36)+n);const {id:_,...rest}=b;next[id]=rest;seen.add(id);n++}
+    for(const b of BASE) if(!seen.has(b.id)) next[b.id]={deleted:true};
+    overrides=next;lsSet();render();closeSheet();toast(n+" livres importés")}catch(e){toast("JSON invalide")}}}
+
+let tt;function toast(m){const t=document.getElementById("toast");t.textContent=m;t.classList.add("show");clearTimeout(tt);tt=setTimeout(()=>t.classList.remove("show"),2000)}
+
+// ---- events
+document.addEventListener("click",e=>{
+  const t=e.target.closest("[data-dim],[data-k],[data-id],[data-edit],[data-del],#clearf,#exp,#imp,#csv");if(!t)return;
+  if(t.dataset.dim){state.dim=t.dataset.dim;state.filter=null;render();window.scrollTo(0,0)}
+  else if(t.dataset.k){e.preventDefault();state.filter={k:t.dataset.k,v:t.dataset.v};state.q="";document.getElementById("q").value="";closeSheet();render();window.scrollTo(0,0)}
+  else if(t.dataset.id)detail(t.dataset.id);
+  else if(t.dataset.edit)editForm(t.dataset.edit);
+  else if(t.dataset.del)confirmDel(t.dataset.del);
+  else if(t.id==="clearf"){state.filter=null;render()}
+  else if(t.id==="exp")exportJSON();else if(t.id==="imp")importForm();else if(t.id==="csv")exportCSV();
+});
+document.addEventListener("change",e=>{if(e.target.id==="sort"){state.sort=e.target.value;render()}});
+document.getElementById("q").addEventListener("input",e=>{state.q=e.target.value;render()});
+document.getElementById("add").onclick=()=>editForm(null);
+render();
+
+// ---- PWA : fonctionnement hors ligne
+if("serviceWorker" in navigator){window.addEventListener("load",()=>navigator.serviceWorker.register("sw.js").catch(()=>{}))}
+</script>
+</body>
+</html>
