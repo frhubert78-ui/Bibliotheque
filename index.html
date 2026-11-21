@@ -322,8 +322,17 @@ function statsView(all){
 
 // ---- sheet
 const sheet=document.getElementById("sheet"),bg=document.getElementById("bg");
-function openSheet(html){sheet.innerHTML=`<div class="grab"></div>`+html;bg.style.display="block";requestAnimationFrame(()=>sheet.classList.add("open"))}
-function closeSheet(){sheet.classList.remove("open");setTimeout(()=>{bg.style.display="none"},250)}
+// ---- historique : le bouton retour du téléphone revient en arrière au lieu de quitter
+let sheetOpen=false;
+const snap=(sh)=>({dim:state.dim,filter:state.filter,lieu:state.lieu,sheet:!!sh});
+function nav(replace){try{history[replace?"replaceState":"pushState"](snap(false),"")}catch(e){}}
+function openSheet(html){sheet.innerHTML=`<div class="grab"></div>`+html;bg.style.display="block";requestAnimationFrame(()=>sheet.classList.add("open"));
+  if(!sheetOpen){sheetOpen=true;try{history.pushState(snap(true),"")}catch(e){}}}
+function hideSheet(){sheetOpen=false;sheet.classList.remove("open");setTimeout(()=>{if(!sheetOpen)bg.style.display="none"},250)}
+function closeSheet(){if(sheetOpen&&history.state&&history.state.sheet){history.back()}else hideSheet()}
+window.addEventListener("popstate",e=>{const s=e.state;hideSheet();if(!s)return;
+  const changed=s.dim!==state.dim||JSON.stringify(s.filter)!==JSON.stringify(state.filter)||s.lieu!==state.lieu;
+  state.dim=s.dim;state.filter=s.filter;state.lieu=s.lieu;if(changed){render();window.scrollTo(0,0)}});
 bg.onclick=closeSheet;
 function detail(id){
   const b=books().find(x=>x.id===id);if(!b)return;
@@ -378,20 +387,21 @@ let tt;function toast(m){const t=document.getElementById("toast");t.textContent=
 // ---- events
 document.addEventListener("click",e=>{
   const t=e.target.closest("[data-lieu],[data-move],[data-dim],[data-k],[data-id],[data-edit],[data-del],#clearf,#exp,#imp,#csv");if(!t)return;
-  if(t.dataset.lieu){state.lieu=t.dataset.lieu;state.filter=null;if(state.dim==="stats")state.dim="all";try{localStorage.setItem("biblio_lieu",state.lieu)}catch(e){}render();window.scrollTo(0,0);return}
+  if(t.dataset.lieu){state.lieu=t.dataset.lieu;state.filter=null;if(state.dim==="stats")state.dim="all";try{localStorage.setItem("biblio_lieu",state.lieu)}catch(e){}render();window.scrollTo(0,0);nav();return}
   if(t.dataset.move){const b=books().find(x=>x.id===t.dataset.move);const to=b.lieu==="Stockage"?"Bibliothèque":"Stockage";const {id:_,...rest}=b;saveOverride(b.id,{...rest,lieu:to});closeSheet();toast("Déplacé vers "+to.toLowerCase());return}
-  if(t.dataset.dim){state.dim=t.dataset.dim;state.filter=null;render();window.scrollTo(0,0)}
-  else if(t.dataset.k){e.preventDefault();state.filter={k:t.dataset.k,v:t.dataset.v};state.q="";document.getElementById("q").value="";closeSheet();render();window.scrollTo(0,0)}
+  if(t.dataset.dim){state.dim=t.dataset.dim;state.filter=null;render();window.scrollTo(0,0);nav()}
+  else if(t.dataset.k){e.preventDefault();const fromSheet=sheetOpen;if(fromSheet)hideSheet();state.filter={k:t.dataset.k,v:t.dataset.v};state.q="";document.getElementById("q").value="";render();window.scrollTo(0,0);nav(fromSheet)}
   else if(t.dataset.id)detail(t.dataset.id);
   else if(t.dataset.edit)editForm(t.dataset.edit);
   else if(t.dataset.del)confirmDel(t.dataset.del);
-  else if(t.id==="clearf"){state.filter=null;render()}
+  else if(t.id==="clearf"){state.filter=null;render();nav()}
   else if(t.id==="exp")exportJSON();else if(t.id==="imp")importForm();else if(t.id==="csv")exportCSV();
 });
 document.addEventListener("change",e=>{if(e.target.id==="sort"){state.sort=e.target.value;render()}});
 document.getElementById("q").addEventListener("input",e=>{state.q=e.target.value;render()});
 document.getElementById("add").onclick=()=>editForm(null);
 render();
+try{history.replaceState(snap(false),"")}catch(e){}
 
 // ---- PWA : fonctionnement hors ligne
 if("serviceWorker" in navigator){window.addEventListener("load",()=>navigator.serviceWorker.register("sw.js").catch(()=>{}))}
