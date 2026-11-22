@@ -89,6 +89,32 @@ header{background:color-mix(in srgb,var(--bg) 82%,transparent)!important;-webkit
 .seg button{border:0;background:transparent;color:var(--ink);font:600 12px Inter,sans-serif;padding:8px 4px;border-radius:9px;cursor:pointer}
 .seg button.on{background:var(--card);color:var(--accent);box-shadow:0 1px 3px rgba(0,0,0,.15)}
 .tag.lieu{background:transparent;border:1px solid var(--line)}
+
+/* ---- étagère ---- */
+.vbtn{border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:8px;padding:5px 10px;font:600 13px Inter,sans-serif;cursor:pointer}
+.case{background:linear-gradient(90deg,#4a2a12,#6b3f1f 3%,#8a5530 50%,#6b3f1f 97%,#4a2a12);padding:10px 10px 0;border-radius:6px;box-shadow:0 14px 30px rgba(0,0,0,.45),inset 0 0 0 1px rgba(0,0,0,.4)}
+.shelf{position:relative;height:150px;display:flex;align-items:flex-end;padding:0 8px;gap:1px;background:linear-gradient(rgba(0,0,0,.55),rgba(0,0,0,.25) 30%,rgba(0,0,0,.35)),repeating-linear-gradient(90deg,#3d2311 0 7px,#432713 7px 15px,#3a210f 15px 19px);box-shadow:inset 0 10px 18px rgba(0,0,0,.6),inset 6px 0 10px rgba(0,0,0,.5),inset -6px 0 10px rgba(0,0,0,.5)}
+.plank{height:16px;margin:0 -10px 10px;background:linear-gradient(#a8703f,#8a5530 30%,#6b3f1f 80%,#4a2a12);box-shadow:0 6px 10px rgba(0,0,0,.5)}
+.bk{position:relative;flex:none;width:var(--w);height:var(--h);border:0;padding:0;cursor:pointer;border-radius:2px 2px 1px 1px;background:linear-gradient(90deg,rgba(0,0,0,.45),rgba(255,255,255,.12) 18%,rgba(255,255,255,.04) 45%,rgba(0,0,0,.18) 80%,rgba(0,0,0,.5)),var(--c);box-shadow:2px 0 3px rgba(0,0,0,.45);transition:transform .25s ease,box-shadow .25s;transform-origin:bottom center}
+.bk::before,.bk::after{content:"";position:absolute;left:0;right:0;height:3px;background:var(--gold);opacity:.85}
+.bk::before{top:9%;box-shadow:0 5px 0 var(--gold)}.bk::after{bottom:7%;box-shadow:0 -5px 0 var(--gold)}
+.bk.plain::before,.bk.plain::after{display:none}
+.bk span{position:absolute;inset:22% 0 20%;writing-mode:vertical-rl;transform:rotate(180deg);display:flex;align-items:center;justify-content:center;font-family:Georgia,"Times New Roman",serif;font-size:var(--fs,11px);color:var(--tx);text-shadow:0 1px 1px rgba(0,0,0,.6);line-height:1.05;overflow:hidden;padding:0 2px;white-space:nowrap;letter-spacing:.3px}
+.bk i{position:absolute;bottom:2%;left:0;right:0;text-align:center;font:700 9px system-ui;font-style:normal;color:var(--tx)}
+.bk.lean{transform:rotate(-9deg) translateX(4px);margin-left:6px}
+.bk.out{transform:translateY(-16px);box-shadow:0 10px 16px rgba(0,0,0,.6);z-index:2}.bk.lean.out{transform:translateY(-16px)}
+.bk.st{filter:saturate(.55) brightness(.85)}
+.ov{position:fixed;inset:0;z-index:12;background:rgba(10,6,3,.6);display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .3s;perspective:1200px}
+.ov.open{opacity:1;pointer-events:auto}
+.book3d{position:relative;width:min(84vw,340px);height:min(128vw,500px);transform-style:preserve-3d;transform:rotateY(-25deg) scale(.6);transition:transform .5s ease}
+.ov.open .book3d{transform:none}
+.pages{position:absolute;inset:6px 4px 6px 10px;background:repeating-linear-gradient(#fbf3e4 0 3px,#efe2c9 3px 4px);border-radius:3px 10px 10px 3px;color:#2b2018;padding:18px 16px 16px 20px;font-size:14px;overflow:auto;box-shadow:0 18px 40px rgba(0,0,0,.5)}
+.pages h2{font-family:Fraunces,Georgia,serif;margin:6px 0 2px;font-size:21px;line-height:1.2}
+.pages dl{grid-template-columns:96px 1fr}.pages .btn{min-width:0}
+.cover{position:absolute;inset:0;border-radius:4px 12px 12px 4px;transform-origin:left center;transition:transform .7s cubic-bezier(.6,.05,.3,1) .35s;background:linear-gradient(90deg,rgba(0,0,0,.45),rgba(255,255,255,.08) 6%,transparent 12%),var(--c);box-shadow:0 18px 40px rgba(0,0,0,.6);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:30px;color:var(--tx);backface-visibility:hidden;pointer-events:none}
+.cover b{font-family:Georgia,serif;font-size:24px;border-top:2px solid var(--gold);border-bottom:2px solid var(--gold);padding:12px 4px}
+.cover small{margin-top:10px;font-size:14px}
+.ov.reveal .cover{transform:rotateY(-160deg)}
 </style>
 </head>
 <body>
@@ -104,6 +130,7 @@ header{background:color-mix(in srgb,var(--bg) 82%,transparent)!important;-webkit
 <button class="fab" id="add" aria-label="Ajouter un livre">+</button>
 <div class="sheet-bg" id="bg"></div>
 <div class="sheet" id="sheet"></div>
+<div class="ov" id="ov"><div class="book3d"><div class="pages" id="pg"></div><div class="cover" id="cv"></div></div></div>
 <div class="toast" id="toast"></div>
 
 <script>
@@ -310,9 +337,9 @@ function render(){
     m.innerHTML=html;return;
   }
   const list=sortBooks(filtered());
-  html+=`<div class="sorter"><span>${list.length} résultat${list.length>1?"s":""}</span><label style="margin:0">Trier : <select id="sort">
+  html+=`<div class="sorter"><span>${list.length} résultat${list.length>1?"s":""} <button class="vbtn" id="vue">${shelfMode?"☰ Liste":"📚 Étagère"}</button></span><label style="margin:0">Trier : <select id="sort">
   ${[["titre","Titre"],["auteur","Auteur"],["editeur","Éditeur"],["genre","Genre"],["age","Âge"]].map(([v,l])=>`<option value="${v}" ${state.sort===v?"selected":""}>${l}</option>`).join("")}</select></label></div>`;
-  html+=list.length?list.map(bookCard).join(""):`<div class="empty">Aucun livre trouvé.</div>`;
+  html+=list.length?(shelfMode?shelfHTML(list):list.map(bookCard).join("")):`<div class="empty">Aucun livre trouvé.</div>`;
   m.innerHTML=html;
 }
 function statsView(all){
@@ -341,9 +368,9 @@ const sheet=document.getElementById("sheet"),bg=document.getElementById("bg");
 let sheetOpen=false;
 const snap=(sh)=>({dim:state.dim,filter:state.filter,lieu:state.lieu,sheet:!!sh});
 function nav(replace){try{history[replace?"replaceState":"pushState"](snap(false),"")}catch(e){}}
-function openSheet(html){sheet.innerHTML=`<div class="grab"></div>`+html;bg.style.display="block";requestAnimationFrame(()=>sheet.classList.add("open"));
+function openSheet(html){if(typeof hideBook==="function")hideBook();sheet.innerHTML=`<div class="grab"></div>`+html;bg.style.display="block";requestAnimationFrame(()=>sheet.classList.add("open"));
   if(!sheetOpen){sheetOpen=true;try{history.pushState(snap(true),"")}catch(e){}}}
-function hideSheet(){sheetOpen=false;sheet.classList.remove("open");setTimeout(()=>{if(!sheetOpen)bg.style.display="none"},250)}
+function hideSheet(){sheetOpen=false;if(typeof hideBook==="function")hideBook();sheet.classList.remove("open");setTimeout(()=>{if(!sheetOpen)bg.style.display="none"},250)}
 function closeSheet(){if(sheetOpen&&history.state&&history.state.sheet){history.back()}else hideSheet()}
 window.addEventListener("popstate",e=>{const s=e.state;hideSheet();if(!s)return;
   const changed=s.dim!==state.dim||JSON.stringify(s.filter)!==JSON.stringify(state.filter)||s.lieu!==state.lieu;
@@ -352,13 +379,40 @@ bg.onclick=closeSheet;
 function detail(id){
   const b=books().find(x=>x.id===id);if(!b)return;
   const link=(k)=>b[k]?`<a href="#" data-k="${k}" data-v="${esc(b[k])}">${esc(b[k])}</a>`:"—";
-  openSheet(`<div class="tags"><span class="tag" style="background:${colorFor(b.genre)};color:#fff">${esc(b.genre)}</span><span class="tag age">${esc(b.age)}</span></div>
+  const body=`<div class="tags"><span class="tag" style="background:${colorFor(b.genre)};color:#fff">${esc(b.genre)}</span><span class="tag age">${esc(b.age)}</span></div>
   <h2>${esc(b.titre)}</h2><div class="sub">${esc(b.auteur)}</div>
   <dl><dt>Auteur</dt><dd>${link("auteur")}</dd><dt>Éditeur</dt><dd>${link("editeur")}</dd><dt>Collection</dt><dd>${link("collection")}</dd>
   <dt>Emplacement</dt><dd>${b.lieu==="Stockage"?"📦":"📚"} ${esc(b.lieu)}</dd><dt>Genre</dt><dd>${link("genre")}</dd><dt>Âge conseillé</dt><dd>${link("age")}</dd>${b.note?`<dt>Note</dt><dd>${esc(b.note)}</dd>`:""}${b.photo?`<dt>Photo</dt><dd>n° ${esc(b.photo)}</dd>`:""}</dl>
   <div class="row"><button class="btn primary" data-edit="${b.id}">Modifier</button><button class="btn danger" data-del="${b.id}">Supprimer</button></div>
-  <div class="row"><button class="btn" data-move="${b.id}">Déplacer vers ${b.lieu==="Stockage"?"📚 la bibliothèque":"📦 le stockage"}</button></div>`);
+  <div class="row"><button class="btn" data-move="${b.id}">Déplacer vers ${b.lieu==="Stockage"?"📚 la bibliothèque":"📦 le stockage"}</button></div>`;
+  const sp=document.querySelector(`.bk[data-id="${b.id}"]`);
+  if(shelfMode&&sp){document.querySelectorAll(".bk.out").forEach(x=>x.classList.remove("out"));sp.classList.add("out");setTimeout(()=>openBook(b,body),260)}
+  else openSheet(body);
 }
+
+// ---- vue étagère ----
+let shelfMode=true;try{shelfMode=localStorage.getItem("biblio_vue")!=="liste"}catch(e){}
+const PAL={"Policier / Thriller":["#5a1e1e","#6e2a24","#3b1a1a","#702f2f","#4a2323"],"Science-fiction / Fantastique":["#1e2f4a","#22384f","#2d2346","#1b3a3a","#3a2a52"],
+"Roman":["#2f4a2a","#4a3a22","#5a4026","#3a4a3a","#5b3a2e"],"Roman historique":["#5b3a1e","#4a3018"],"Manga":["#c8622a","#1f6e8c","#3a8a7a","#222222","#d0a020","#b03a48","#e2e2e2"],
+"BD":["#e9e2cf","#d9cfb8"],"Album jeunesse":["#e07a3a","#3a9ad0","#d04a7a","#6aa02a","#e0b020","#7a5ad0"],"Littérature jeunesse":["#8a3a6a","#2a6a8a","#a05a2a"],
+"Romance":["#d06a8a","#8a4ab0","#2a9ab0","#e08a3a"],"Récit / Témoignage":["#4a4a3a","#5a4a3a"],"Essai / Sciences humaines":["#2a3a4a","#4a2a2a"],"Théâtre":["#6a2a3a","#3a2a5a","#2a4a5a"],"Poésie":["#4a2a5a","#2a5a4a"]};
+const hsh=s=>{let h=0;for(const c of s||"")h=(h*31+c.charCodeAt(0))>>>0;return h};
+const isLight=c=>{const n=parseInt(c.slice(1),16);return((n>>16)*299+((n>>8)&255)*587+(n&255)*114)/1000>165};
+function look(b){const k=hsh(b.titre+b.auteur+b.id),p=PAL[b.genre]||["#5a3a2a","#3a2a4a","#2a4a3a","#4a2a2a","#2a3a4a"],c=p[k%p.length],L=isLight(c),manga=b.genre==="Manga",kid=b.genre==="Album jeunesse"||b.genre==="BD";
+ const tomes=manga?(((b.note||"").match(/(\d+)\s*à\s*(\d+)/)||[])[2]|0):0;
+ return {c,tx:L?"#2b2018":(manga||kid?"#fff":"#e9cf8f"),gold:L?"#7b5131":(manga||kid?"rgba(255,255,255,.7)":"#c9a45a"),
+  w:manga?Math.min(90,18+Math.max(1,tomes)*1.6):kid?19+k%6:21+k%17,h:manga?84:kid?(66+k%10):(76+k%22),plain:manga||kid,fs:manga?"10px":"11px",tomes}}
+function shelfHTML(list){const W=Math.max(200,(document.getElementById("main").clientWidth||360)-36);let rows=[],row=[],w=0;
+ for(const b of list){const bw=look(b).w+1;if(w+bw>W&&row.length){rows.push(row);row=[];w=0}row.push(b);w+=bw}if(row.length)rows.push(row);
+ return `<div class="case">${rows.map(r=>`<div class="shelf">${r.map((b,k)=>{const L=look(b),lean=k===r.length-1&&r.length>3&&hsh(b.titre)%3===0;
+  return `<button class="bk${L.plain?" plain":""}${lean?" lean":""}${state.lieu==="Tout"&&b.lieu==="Stockage"?" st":""}" data-id="${b.id}" aria-label="${esc(b.titre)}" style="--c:${L.c};--tx:${L.tx};--gold:${L.gold};--w:${L.w}px;--h:${L.h}%;--fs:${L.fs}"><span>${esc(b.titre)}</span>${L.tomes?`<i>×${L.tomes}</i>`:""}</button>`}).join("")}</div><div class="plank"></div>`).join("")}</div>`}
+const ov=document.getElementById("ov");
+function hideBook(){ov.classList.remove("reveal");ov.classList.remove("open");document.querySelectorAll(".bk.out").forEach(x=>x.classList.remove("out"))}
+function openBook(b,inner){const L=look(b),cv=document.getElementById("cv");cv.style.cssText=`--c:${L.c};--tx:${L.tx};--gold:${L.gold}`;cv.innerHTML=`<b>${esc(b.titre)}</b><small>${esc(b.auteur)}</small>`;
+ document.getElementById("pg").innerHTML=inner;document.getElementById("pg").scrollTop=0;ov.classList.remove("reveal");ov.classList.add("open");requestAnimationFrame(()=>requestAnimationFrame(()=>ov.classList.add("reveal")));
+ if(!sheetOpen){sheetOpen=true;try{history.pushState(snap(true),"")}catch(e){}}}
+ov.addEventListener("click",e=>{if(e.target===ov)closeSheet()});
+let rzt;addEventListener("resize",()=>{clearTimeout(rzt);rzt=setTimeout(()=>{if(shelfMode)render()},200)});
 function datalist(k){return `<datalist id="dl-${k}">${[...new Set(books().map(b=>b[k]).filter(Boolean))].sort((a,b)=>a.localeCompare(b,"fr")).map(v=>`<option value="${esc(v)}">`).join("")}</datalist>`}
 function editForm(id){
   const b=id?books().find(x=>x.id===id):{titre:"",auteur:"",editeur:"",collection:"",genre:"",age:"",note:"",lieu:state.lieu==="Stockage"?"Stockage":"Bibliothèque"};
@@ -401,6 +455,7 @@ let tt;function toast(m){const t=document.getElementById("toast");t.textContent=
 
 // ---- events
 document.addEventListener("click",e=>{
+  if(e.target.closest("#vue")){shelfMode=!shelfMode;try{localStorage.setItem("biblio_vue",shelfMode?"etagere":"liste")}catch(x){}render();return}
   const t=e.target.closest("[data-lieu],[data-move],[data-dim],[data-k],[data-id],[data-edit],[data-del],#clearf,#exp,#imp,#csv");if(!t)return;
   if(t.dataset.lieu){state.lieu=t.dataset.lieu;state.filter=null;if(state.dim==="stats")state.dim="all";try{localStorage.setItem("biblio_lieu",state.lieu)}catch(e){}render();window.scrollTo(0,0);nav();return}
   if(t.dataset.move){const b=books().find(x=>x.id===t.dataset.move);const to=b.lieu==="Stockage"?"Bibliothèque":"Stockage";const {id:_,...rest}=b;saveOverride(b.id,{...rest,lieu:to});closeSheet();toast("Déplacé vers "+to.toLowerCase());return}
