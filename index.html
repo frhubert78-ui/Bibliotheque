@@ -403,10 +403,11 @@ const isLight=c=>{const n=parseInt(c.slice(1),16);return((n>>16)*299+((n>>8)&255
 function look(b){const k=hsh(b.titre+b.auteur+b.id),p=PAL[b.genre]||["#5a3a2a","#3a2a4a","#2a4a3a","#4a2a2a","#2a3a4a"],c=p[k%p.length],L=isLight(c),manga=b.genre==="Manga",kid=b.genre==="Album jeunesse"||b.genre==="BD";
  const tomes=manga?(((b.note||"").match(/(\d+)\s*à\s*(\d+)/)||[])[2]|0):0;
  return {c,tx:L?"#2b2018":(manga||kid?"#fff":"#e9cf8f"),gold:L?"#7b5131":(manga||kid?"rgba(255,255,255,.7)":"#c9a45a"),
-  w:manga?Math.min(90,18+Math.max(1,tomes)*1.6):kid?19+k%6:21+k%17,h:manga?84:kid?(66+k%10):(76+k%22),plain:manga||kid,fs:manga?"10px":"11px",tomes}}
-function shelfHTML(list){const W=Math.max(200,(document.getElementById("main").clientWidth||360)-36);let rows=[],row=[],w=0;
+  w:manga?Math.min(90,18+Math.max(1,tomes)*1.6):kid?19+k%6:21+k%17,h:manga?84:kid?(66+k%10):(74+k%19),plain:manga||kid,fs:manga?"10px":"11px",tomes}}
+function shelfHTML(list){const mn=document.getElementById("main"),cs=getComputedStyle(mn);
+ const W=Math.max(180,(mn.clientWidth||360)-parseFloat(cs.paddingLeft)-parseFloat(cs.paddingRight)-36-8);let rows=[],row=[],w=0;
  for(const b of list){const bw=look(b).w+1;if(w+bw>W&&row.length){rows.push(row);row=[];w=0}row.push(b);w+=bw}if(row.length)rows.push(row);
- return `<div class="case">${rows.map(r=>`<div class="shelf">${r.map((b,k)=>{const L=look(b),lean=k===r.length-1&&r.length>3&&hsh(b.titre)%3===0;
+ return `<div class="case">${rows.map(r=>`<div class="shelf">${r.map((b,k)=>{const L=look(b),lean=k===r.length-1&&r.length>3&&hsh(b.titre)%3===0&&r.reduce((s,x)=>s+look(x).w+1,0)+14<=W;
   return `<button class="bk${L.plain?" plain":""}${lean?" lean":""}${state.lieu==="Tout"&&b.lieu==="Stockage"?" st":""}" data-id="${b.id}" aria-label="${esc(b.titre)}" style="--c:${L.c};--tx:${L.tx};--gold:${L.gold};--w:${L.w}px;--h:${L.h}%;--fs:${L.fs}"><span>${esc(b.titre)}</span>${L.tomes?`<i>×${L.tomes}</i>`:""}</button>`}).join("")}</div><div class="plank"></div>`).join("")}</div>`}
 const ov=document.getElementById("ov");
 function hideBook(){ov.classList.remove("reveal");ov.classList.remove("open");document.querySelectorAll(".bk.out").forEach(x=>x.classList.remove("out"))}
