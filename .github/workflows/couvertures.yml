@@ -1,0 +1,29 @@
+name: Couvertures et résumés
+on:
+  push:
+    branches: [main]
+    paths: ["index.html", "tools/covers.mjs"]
+  workflow_dispatch:
+  schedule:
+    - cron: "17 3 * * 1"
+permissions:
+  contents: write
+concurrency:
+  group: couvertures
+  cancel-in-progress: false
+jobs:
+  covers:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: node tools/covers.mjs
+      - name: Enregistrer covers.json
+        run: |
+          git config user.name "robot-couvertures"
+          git config user.email "actions@users.noreply.github.com"
+          git add covers.json
+          git diff --cached --quiet || (git commit -m "Mise à jour des couvertures et résumés" && git pull --rebase && git push)

@@ -479,6 +479,8 @@ function shelfHTML(list){const mn=document.getElementById("main"),cs=getComputed
 
 // ---- couvertures, résumés et extraits (Google Books, Open Library en secours) ----
 let META={};try{META=JSON.parse(localStorage.getItem("biblio_meta")||"{}")}catch(e){}
+/* couvertures préparées par le robot GitHub (covers.json) */
+let SRV={};const srvReady=fetch("covers.json?"+Math.floor(Date.now()/36e5)).then(r=>r.ok?r.json():{}).then(j=>{SRV=j||{};for(const k in SRV){const s=SRV[k],c=META[k];if(s.img||s.desc||s.px)META[k]={...(c||{}),...s,v:3,t:Date.now(),srv:1}}}).catch(()=>{});
 const saveMeta=()=>{try{localStorage.setItem("biblio_meta",JSON.stringify(META))}catch(e){}};
 const metaKey=b=>(b.titre+"|"+b.auteur).toLowerCase();
 const cleanT=t=>(t||"").replace(/\s*[–—-]\s*(tome|vol\.?)\s*\d+.*$/i,"").replace(/[«»"]/g,"").trim();
@@ -509,7 +511,8 @@ async function fetchMeta(b,force,wantExtract){const k=metaKey(b),c=META[k];
  META[k]=m;saveMeta();return m}
 /* recherche des couvertures en arrière-plan */
 const QUEUE=[];let qRun=0;
-function prefetch(list){for(const b of list){const c=META[metaKey(b)];if(!(c&&c.v===3&&(c.img||c.t>Date.now()-864e5))&&!QUEUE.includes(b))QUEUE.push(b)}pump()}
+function prefetch(list){srvReady.then(()=>prefetch2(list))}
+function prefetch2(list){for(const b of list){const c=META[metaKey(b)];if(!(c&&c.v===3&&(c.img||c.t>Date.now()-864e5))&&!QUEUE.includes(b))QUEUE.push(b)}pump()}
 function pump(){while(qRun<1&&QUEUE.length&&navigator.onLine!==false){const b=QUEUE.shift();qRun++;fetchMeta(b).catch(()=>{}).finally(()=>setTimeout(()=>{qRun--;pump()},700))}}
 function extHTML(m){if(!m)return `<div class="ext"><p class="src">Recherche du résumé et de l'extrait…</p></div>`;
  const d=m.desc||"",short=d.length>380?d.slice(0,380).replace(/\s+\S*$/,"")+"…":d;
