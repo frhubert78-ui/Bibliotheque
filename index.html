@@ -112,10 +112,16 @@ header{background:color-mix(in srgb,var(--bg) 82%,transparent)!important;-webkit
 .pages{position:absolute;inset:6px 4px 6px 10px;background:repeating-linear-gradient(#fbf3e4 0 3px,#efe2c9 3px 4px);border-radius:3px 10px 10px 3px;color:#2b2018;padding:18px 16px 16px 20px;font-size:14px;overflow:auto;box-shadow:0 18px 40px rgba(0,0,0,.5)}
 .pages h2{font-family:Fraunces,Georgia,serif;margin:6px 0 2px;font-size:21px;line-height:1.2}
 .pages dl{grid-template-columns:96px 1fr}.pages .btn{min-width:0}
-.cover{position:absolute;inset:0;border-radius:4px 12px 12px 4px;transform-origin:left center;transition:transform .7s cubic-bezier(.6,.05,.3,1) .35s;background:linear-gradient(90deg,rgba(0,0,0,.45),rgba(255,255,255,.08) 6%,transparent 12%),var(--c);box-shadow:0 18px 40px rgba(0,0,0,.6);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:30px;color:var(--tx);backface-visibility:hidden;pointer-events:none}
+.cover{position:absolute;inset:0;border-radius:4px 12px 12px 4px;transform-origin:left center;transition:transform .7s cubic-bezier(.6,.05,.3,1) .35s;background:linear-gradient(90deg,rgba(0,0,0,.45),rgba(255,255,255,.08) 6%,transparent 12%),var(--c);box-shadow:0 18px 40px rgba(0,0,0,.6);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:30px;color:var(--tx);backface-visibility:hidden;cursor:pointer;overflow:hidden}
 .cover b{font-family:Georgia,serif;font-size:24px;border-top:2px solid var(--gold);border-bottom:2px solid var(--gold);padding:12px 4px}
 .cover small{margin-top:10px;font-size:14px}
-.ov.reveal .cover{transform:rotateY(-160deg)}
+.ov.reveal .cover{transform:rotateY(-160deg);pointer-events:none}
+.cover img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0;transition:opacity .4s}
+.cover img.ok{opacity:1}.cover .hint{position:absolute;left:0;right:0;bottom:14px;font:600 12.5px system-ui;color:#fff;text-shadow:0 1px 3px #000;opacity:.9;z-index:2}
+.cover::after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,rgba(0,0,0,.4),rgba(255,255,255,.1) 5%,transparent 10%);pointer-events:none}
+.ext{margin-top:14px;border-top:1px dashed #cdb894;padding-top:10px}.ext h3{font-family:Fraunces,Georgia,serif;font-size:16px;margin:0 0 6px}
+.ext p{margin:0 0 8px;line-height:1.5;font-size:13.5px}.ext .src{font-size:11px;color:#8a7560}
+.ext .btn.p{background:#7b5131;color:#fff;border-color:#7b5131;margin:4px 0 6px;width:100%}.ext .more{border:0;background:none;color:#7b5131;font-weight:600;padding:0;cursor:pointer}
 </style>
 </head>
 <body>
@@ -467,12 +473,43 @@ function shelfHTML(list){const mn=document.getElementById("main"),cs=getComputed
  for(const b of list){const bw=look(b).w+1;if(w+bw>W&&row.length){rows.push(row);row=[];w=0}row.push(b);w+=bw}if(row.length)rows.push(row);
  return `<div class="case">${rows.map(r=>`<div class="shelf">${r.map((b,k)=>{const L=look(b),lean=k===r.length-1&&r.length>3&&hsh(b.titre)%3===0&&r.reduce((s,x)=>s+look(x).w+1,0)+14<=W;
   return `<button class="bk${L.plain?" plain":""}${lean?" lean":""}${state.lieu==="Tout"&&b.lieu==="Stockage"?" st":""}" data-id="${b.id}" aria-label="${esc(b.titre)}" style="--c:${L.c};--tx:${L.tx};--gold:${L.gold};--w:${L.w}px;--h:${L.h}%;--fs:${L.fs}"><span>${esc(b.titre)}</span>${L.tomes?`<i>×${L.tomes}</i>`:""}</button>`}).join("")}</div><div class="plank"></div>`).join("")}</div>`}
+
+// ---- couvertures, résumés et extraits (Google Books, Open Library en secours) ----
+let META={};try{META=JSON.parse(localStorage.getItem("biblio_meta")||"{}")}catch(e){}
+const saveMeta=()=>{try{localStorage.setItem("biblio_meta",JSON.stringify(META))}catch(e){}};
+const metaKey=b=>(b.titre+"|"+b.auteur).toLowerCase();
+const cleanT=t=>(t||"").replace(/\s*[–—-]\s*(tome|vol\.?)\s*\d+.*$/i,"").replace(/[«»"]/g,"").trim();
+const goodA=a=>a&&!/vérifier|disney|marvel|larousse|harrap|bescherelle|oxford|sgel|moulinex|anonyme|traduction/i.test(a);
+async function fetchMeta(b){const k=metaKey(b);if(META[k]&&(META[k].t>Date.now()-30*864e5||META[k].img))return META[k];
+ const m={t:Date.now()};const T=cleanT(b.titre),A=goodA(b.auteur)?b.auteur.split(/[,&(]/)[0].trim():"";
+ try{const q=encodeURIComponent(`intitle:${T}`+(A?` inauthor:${A}`:""));
+  let r=await fetch(`https://www.googleapis.com/books/v1/volumes?q=${q}&maxResults=5&printType=books`).then(x=>x.json());
+  let it=(r.items||[]);if(!it.length&&A){r=await fetch(`https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(T+" "+A)}&maxResults=5`).then(x=>x.json());it=r.items||[]}
+  it.sort((x,y)=>((y.volumeInfo.language==="fr")-(x.volumeInfo.language==="fr"))||(!!y.volumeInfo.imageLinks-!!x.volumeInfo.imageLinks));
+  const v=it[0];if(v){const vi=v.volumeInfo,ai=v.accessInfo||{};
+   if(vi.imageLinks)m.img=(vi.imageLinks.thumbnail||vi.imageLinks.smallThumbnail).replace("http:","https:").replace("&edge=curl","").replace("zoom=1","zoom=2");
+   m.desc=(vi.description||"").replace(/<[^>]+>/g," ");m.link=vi.previewLink||vi.infoLink;
+   if(ai.viewability==="PARTIAL"||ai.viewability==="ALL_PAGES")m.read=ai.webReaderLink||vi.previewLink}
+ }catch(e){}
+ if(!m.img){try{const r=await fetch(`https://openlibrary.org/search.json?title=${encodeURIComponent(T)}${A?"&author="+encodeURIComponent(A):""}&limit=3&fields=cover_i`).then(x=>x.json());
+  const d=(r.docs||[]).find(x=>x.cover_i);if(d)m.img=`https://covers.openlibrary.org/b/id/${d.cover_i}-L.jpg`}catch(e){}}
+ META[k]=m;saveMeta();return m}
+function extHTML(m){if(!m)return `<div class="ext"><p class="src">Recherche du résumé et de l'extrait…</p></div>`;
+ const d=m.desc||"",short=d.length>380?d.slice(0,380).replace(/\s+\S*$/,"")+"…":d;
+ return `<div class="ext"><h3>Résumé</h3>${d?`<p id="rs">${esc(short)}</p>${d.length>380?`<button class="more" id="rsm">Lire la suite</button>`:""}`:`<p class="src">Pas de résumé trouvé pour ce livre.</p>`}
+ ${m.read?`<button class="btn p" data-url="${esc(m.read)}">📖 Lire un extrait</button>`:m.link?`<button class="btn" data-url="${esc(m.link)}" style="width:100%;margin:4px 0 6px">Voir le livre sur Google Books</button><p class="src">Pas d'extrait gratuit disponible pour ce livre.</p>`:""}
+ ${(m.desc||m.link)?`<p class="src">Résumé, couverture et extrait : Google Books. Si ce n'est pas le bon livre, c'est une erreur de recherche.</p>`:""}</div>`}
+document.addEventListener("click",e=>{const u=e.target.closest("[data-url]");if(u){window.open(u.dataset.url,"_blank","noopener");return}
+ if(e.target.id==="rsm"){const m=META[document.getElementById("pg").dataset.k];if(m){document.getElementById("rs").textContent=m.desc;e.target.remove()}}});
 const ov=document.getElementById("ov");
 function hideBook(){ov.classList.remove("reveal");ov.classList.remove("open");document.querySelectorAll(".bk.out").forEach(x=>x.classList.remove("out"))}
-function openBook(b,inner){const L=look(b),cv=document.getElementById("cv");cv.style.cssText=`--c:${L.c};--tx:${L.tx};--gold:${L.gold}`;cv.innerHTML=`<b>${esc(b.titre)}</b><small>${esc(b.auteur)}</small>`;
- document.getElementById("pg").innerHTML=inner;document.getElementById("pg").scrollTop=0;ov.classList.remove("reveal");ov.classList.add("open");requestAnimationFrame(()=>requestAnimationFrame(()=>ov.classList.add("reveal")));
+function openBook(b,inner){const L=look(b),cv=document.getElementById("cv"),pg=document.getElementById("pg"),k=metaKey(b);cv.style.cssText=`--c:${L.c};--tx:${L.tx};--gold:${L.gold}`;
+ cv.innerHTML=`<b>${esc(b.titre)}</b><small>${esc(b.auteur)}</small><img alt=""><span class="hint">Touche la couverture pour l'ouvrir</span>`;
+ pg.dataset.k=k;pg.innerHTML=inner+`<div id="extw">${extHTML(META[k]&&META[k].t?META[k]:null)}</div>`;pg.scrollTop=0;ov.classList.remove("reveal");ov.classList.add("open");
+ const show=m=>{if(pg.dataset.k!==k)return;const im=cv.querySelector("img");if(m.img&&im&&!im.src){im.onload=()=>{if(im.naturalWidth>40)im.classList.add("ok")};im.src=m.img}document.getElementById("extw").innerHTML=extHTML(m)};
+ if(META[k]&&META[k].img)show(META[k]);fetchMeta(b).then(show);
  if(!sheetOpen){sheetOpen=true;try{history.pushState(snap(true),"")}catch(e){}}}
-ov.addEventListener("click",e=>{if(e.target===ov)closeSheet()});
+ov.addEventListener("click",e=>{if(e.target===ov)closeSheet();else if(e.target.closest("#cv"))ov.classList.add("reveal")});
 let rzt;addEventListener("resize",()=>{clearTimeout(rzt);rzt=setTimeout(()=>{if(shelfMode)render()},200)});
 function datalist(k){return `<datalist id="dl-${k}">${[...new Set(books().map(b=>b[k]).filter(Boolean))].sort((a,b)=>a.localeCompare(b,"fr")).map(v=>`<option value="${esc(v)}">`).join("")}</datalist>`}
 function editForm(id){
