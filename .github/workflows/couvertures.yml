@@ -5,7 +5,7 @@ on:
     paths: ["index.html", "tools/covers.mjs"]
   workflow_dispatch:
   schedule:
-    - cron: "17 3 * * 1"
+    - cron: "17 3 * * *"
 permissions:
   contents: write
 concurrency:
@@ -22,6 +22,7 @@ jobs:
           node-version: 20
       - run: node tools/covers.mjs
       - name: Enregistrer covers.json
+        if: always()
         run: |
           git config user.name "robot-couvertures"
           git config user.email "actions@users.noreply.github.com"

@@ -26,8 +26,9 @@ async function ol(T, L) {
     const d = (r.docs || []).find(x => x.cover_i && (x.language || []).includes("fre")) || (r.docs || []).find(x => x.cover_i);
     return d ? `https://covers.openlibrary.org/b/id/${d.cover_i}-L.jpg` : null; } catch (e) { return null; }
 }
-let done = 0, found = 0;
+let done = 0, found = 0; const START = Date.now();
 for (const b of books) {
+  if (Date.now() - START > 40 * 60000) { console.log("Temps écoulé : la suite au prochain passage."); break; }
   const k = key(b); if (out[k] && out[k].img && out[k].px) { found++; continue; }
   const T = cleanT(b.titre), L = lastName(b.auteur), nT = norm(T), m = out[k] || {};
   const score = v => { const vi = v.volumeInfo || {}, t = norm(vi.title); return (t === nT ? 6 : t.includes(nT) || nT.includes(t) ? 3 : 0) + (vi.language === "fr" ? 4 : 0) + (vi.imageLinks ? 3 : 0) + (vi.description ? 1 : 0) + (L && (vi.authors || []).join(" ").toLowerCase().includes(L.toLowerCase()) ? 2 : 0); };
