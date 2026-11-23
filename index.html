@@ -519,8 +519,9 @@ function extHTML(m){if(!m)return `<div class="ext"><p class="src">Recherche du r
  return `<div class="ext"><h3>Résumé</h3>${d?`<p id="rs">${esc(short)}</p>${d.length>380?`<button class="more" id="rsm">Lire la suite</button>`:""}`:`<p class="src">Pas de résumé trouvé pour ce livre.</p>`}
  ${m.eid?`<button class="btn p" data-reader="${esc(m.eid)}">📖 Lire un extrait</button>`:m.read?`<button class="btn p" data-url="${esc(m.read)}">📖 Lire un extrait (Google Books)</button>`:""}
  ${m.ws?`<button class="btn" data-url="${esc(m.ws)}" style="width:100%;margin:4px 0 6px">📜 Lire le texte intégral (Wikisource)</button>`:""}
- ${!m.eid&&!m.read&&!m.ws?(m.link?`<button class="btn" data-url="${esc(m.link)}" style="width:100%;margin:4px 0 6px">Voir le livre sur Google Books</button>`:"")+`<p class="src">L'éditeur ne propose pas d'extrait gratuit pour ce livre.</p>`:""}
- ${(m.desc||m.link)?`<p class="src">Résumé, couverture et extrait : Google Books${m.ws?", texte intégral : Wikisource":""}. Si ce n'est pas le bon livre, c'est une erreur de recherche.</p>`:""}</div>`}
+ ${m.ia?`<button class="btn" data-url="${esc(m.ia)}" style="width:100%;margin:4px 0 6px">📜 Lire en ligne (Internet Archive)</button>`:""}
+ ${!m.eid&&!m.read&&!m.ws&&!m.ia?(m.glink||m.link?`<button class="btn" data-url="${esc(m.glink||m.link)}" style="width:100%;margin:4px 0 6px">${/openlibrary/.test(m.glink||m.link)?"Voir la fiche sur Open Library":"Voir le livre sur Google Books"}</button>`:"")+`<p class="src">Pas d'extrait gratuit disponible pour ce livre.</p>`:""}
+ ${(m.desc||m.link)?`<p class="src">Sources : Open Library, Google Books${m.ws?", Wikisource":""}. Si ce n'est pas le bon livre, c'est une erreur de recherche.</p>`:""}</div>`}
 let readerOpen=false;
 function openReader(id){const r=document.getElementById("reader");try{history.pushState({...snap(true),reader:1},"")}catch(e){}
  const f=document.createElement("iframe");f.title="Extrait du livre";f.src=`https://books.google.com/books?id=${encodeURIComponent(id)}&pg=PP1&output=embed&hl=fr`;
