@@ -85,6 +85,7 @@ html{background:var(--bg)!important}
 header{background:color-mix(in srgb,var(--bg) 82%,transparent)!important;-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px)}
 .book,.group,.stat{background:color-mix(in srgb,var(--card) 90%,transparent);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px)}
 .sorter,.filterbar,main>h3,main>.sub,.empty{background:color-mix(in srgb,var(--card) 80%,transparent);border-radius:10px;padding:6px 10px}
+.types{display:flex;gap:6px;overflow-x:auto;padding:8px 0 0;scrollbar-width:none}.types::-webkit-scrollbar{display:none}.types button{flex:none;border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:999px;padding:6px 12px;font:600 12.5px Inter,sans-serif;cursor:pointer}.types button.on{background:var(--accent);border-color:var(--accent);color:#fff}
 .seg{display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px;background:var(--chip);border-radius:12px;padding:4px;margin-top:10px}
 .seg button{border:0;background:transparent;color:var(--ink);font:600 12px Inter,sans-serif;padding:8px 4px;border-radius:9px;cursor:pointer}
 .seg button.on{background:var(--card);color:var(--accent);box-shadow:0 1px 3px rgba(0,0,0,.15)}
@@ -124,6 +125,7 @@ header{background:color-mix(in srgb,var(--bg) 82%,transparent)!important;-webkit
   <div class="sub"><span id="total"></span> · <span class="sync" id="sync">enregistré sur ce téléphone</span></div>
   <div class="search"><input id="q" type="search" placeholder="Titre, auteur, éditeur…" autocomplete="off"></div>
   <div class="seg" id="lieux"></div>
+  <div class="types" id="types"></div>
   <div class="tabs" id="tabs"></div>
 </header>
 <main id="main"></main>
@@ -274,12 +276,18 @@ const ALL=BASE.concat(NEW);
 const LIEUX=["Bibliothèque","Stockage"];
 
 const AGE_ORDER=["3-6 ans","6-9 ans","8-12 ans","10-13 ans","11-15 ans","13-16 ans","15 ans et +","Adulte","Tous âges"];
-const DIMS=[["all","Tous"],["genre","Genre"],["auteur","Auteur"],["editeur","Éditeur"],["age","Âge"],["collection","Collection"],["stats","Stats"]];
-const LABEL={titre:"Titre",auteur:"Auteur",editeur:"Éditeur",collection:"Collection",genre:"Genre",age:"Âge conseillé",note:"Note",photo:"Photo n°",lieu:"Emplacement"};
+const TYPES=["Romans","Mangas","BD","Albums jeunesse","Théâtre et poésie","Autres"];
+const TYPE_EM={"Romans":"📖","Mangas":"🗾","BD":"💬","Albums jeunesse":"🧸","Théâtre et poésie":"🎭","Autres":"📚"};
+function typeOf(b){const g=b.genre||"";if(g==="Manga")return "Mangas";if(g==="BD"||/Astérix/i.test(b.collection||""))return "BD";if(g==="Album jeunesse")return "Albums jeunesse";
+ if(g==="Théâtre"||g==="Poésie")return "Théâtre et poésie";
+ if(/^(Roman|Policier|Science-fiction|Romance|Littérature jeunesse|Nouvelles|Épopée|Conte philosophique|Récit)/.test(g))return "Romans";return "Autres"}
+const DIMS=[["all","Tous"],["type","Type"],["genre","Genre"],["auteur","Auteur"],["editeur","Éditeur"],["age","Âge"],["collection","Collection"],["stats","Stats"]];
+const LABEL={titre:"Titre",auteur:"Auteur",editeur:"Éditeur",collection:"Collection",genre:"Genre",age:"Âge conseillé",note:"Note",photo:"Photo n°",lieu:"Emplacement",type:"Type"};
 const COLORS=["#b4462f","#3d7a55","#2f5f8a","#b7791f","#7a4a8c","#2c7c7c","#a2475e","#5b6b2e","#8a5a2f","#475569"];
 
 let overrides={}; // id -> book | {deleted:true}
-let state={dim:"all",filter:null,q:"",sort:"titre",lieu:"Bibliothèque"};
+let state={dim:"all",filter:null,q:"",sort:"titre",lieu:"Bibliothèque",type:"Tous"};
+try{const t=localStorage.getItem("biblio_type");if(t)state.type=t}catch(e){}
 try{const s=localStorage.getItem("biblio_lieu");if(s)state.lieu=s}catch(e){}
 
 function lsGet(){try{return JSON.parse(localStorage.getItem("biblio_overrides")||"{}")}catch(e){return {}}}
@@ -291,9 +299,10 @@ function books(){
   for(const [id,o] of Object.entries(overrides)){
     if(o&&o.deleted) map.delete(id); else if(o) map.set(id,{...map.get(id),...o,id});
   }
-  return [...map.values()].map(b=>({...b,lieu:b.lieu||"Stockage"}));
+  return [...map.values()].map(b=>{const o={...b,lieu:b.lieu||"Stockage"};o.type=typeOf(o);return o});
 }
-function scoped(){return state.lieu==="Tout"?books():books().filter(b=>b.lieu===state.lieu)}
+function inLieu(){return state.lieu==="Tout"?books():books().filter(b=>b.lieu===state.lieu)}
+function scoped(){const l=inLieu();return state.type==="Tous"?l:l.filter(b=>b.type===state.type)}
 const norm=s=>(s||"").toString().normalize("NFD").replace(/[̀-ͯ]/g,"").toLowerCase();
 function colorFor(s){let h=0;for(const c of s||"")h=(h*31+c.charCodeAt(0))>>>0;return COLORS[h%COLORS.length]}
 const esc=s=>(s??"").toString().replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -316,6 +325,7 @@ function sortBooks(list){
 
 function renderTabs(){
   const all=books(),n=l=>l==="Tout"?all.length:all.filter(b=>b.lieu===l).length;
+  const il=inLieu();document.getElementById("types").innerHTML=["Tous",...TYPES].map(t=>{const c=t==="Tous"?il.length:il.filter(b=>b.type===t).length;return c||t==="Tous"?`<button data-type="${t}" class="${state.type===t?"on":""}">${t==="Tous"?"Tous types":TYPE_EM[t]+" "+t} · ${c}</button>`:""}).join("");
   document.getElementById("lieux").innerHTML=["Bibliothèque","Stockage","Tout"].map(l=>`<button data-lieu="${l}" class="${state.lieu===l?"on":""}">${l} · ${n(l)}</button>`).join("");
   document.getElementById("tabs").innerHTML=DIMS.map(([k,l])=>`<button class="tab ${state.dim===k&&!state.filter?"on":""}" data-dim="${k}">${l}</button>`).join("");
 }
@@ -328,7 +338,7 @@ function bookCard(b){
 function render(){
   renderTabs();
   const all=scoped();
-  document.getElementById("total").textContent=all.length+" livres"+(state.lieu==="Tout"?"":" · "+state.lieu.toLowerCase());
+  document.getElementById("total").textContent=all.length+" livres"+(state.lieu==="Tout"?"":" · "+state.lieu.toLowerCase())+(state.type==="Tous"?"":" · "+state.type.toLowerCase());
   const m=document.getElementById("main");
   let html="";
   if(state.filter){
@@ -377,15 +387,15 @@ function statsView(all){
 const sheet=document.getElementById("sheet"),bg=document.getElementById("bg");
 // ---- historique : le bouton retour du téléphone revient en arrière au lieu de quitter
 let sheetOpen=false;
-const snap=(sh)=>({dim:state.dim,filter:state.filter,lieu:state.lieu,sheet:!!sh});
+const snap=(sh)=>({dim:state.dim,filter:state.filter,lieu:state.lieu,type:state.type,sheet:!!sh});
 function nav(replace){try{history[replace?"replaceState":"pushState"](snap(false),"")}catch(e){}}
 function openSheet(html){if(typeof hideBook==="function")hideBook();sheet.innerHTML=`<div class="grab"></div>`+html;bg.style.display="block";requestAnimationFrame(()=>sheet.classList.add("open"));
   if(!sheetOpen){sheetOpen=true;try{history.pushState(snap(true),"")}catch(e){}}}
 function hideSheet(){sheetOpen=false;if(typeof hideBook==="function")hideBook();sheet.classList.remove("open");setTimeout(()=>{if(!sheetOpen)bg.style.display="none"},250)}
 function closeSheet(){if(sheetOpen&&history.state&&history.state.sheet){history.back()}else hideSheet()}
 window.addEventListener("popstate",e=>{const s=e.state;hideSheet();if(!s)return;
-  const changed=s.dim!==state.dim||JSON.stringify(s.filter)!==JSON.stringify(state.filter)||s.lieu!==state.lieu;
-  state.dim=s.dim;state.filter=s.filter;state.lieu=s.lieu;if(changed){render();window.scrollTo(0,0)}});
+  const changed=s.dim!==state.dim||JSON.stringify(s.filter)!==JSON.stringify(state.filter)||s.lieu!==state.lieu||(s.type||"Tous")!==state.type;
+  state.type=s.type||"Tous";state.dim=s.dim;state.filter=s.filter;state.lieu=s.lieu;if(changed){render();window.scrollTo(0,0)}});
 bg.onclick=closeSheet;
 function detail(id){
   const b=books().find(x=>x.id===id);if(!b)return;
@@ -468,7 +478,8 @@ let tt;function toast(m){const t=document.getElementById("toast");t.textContent=
 // ---- events
 document.addEventListener("click",e=>{
   if(e.target.closest("#vue")){shelfMode=!shelfMode;try{localStorage.setItem("biblio_vue",shelfMode?"etagere":"liste")}catch(x){}render();return}
-  const t=e.target.closest("[data-lieu],[data-move],[data-dim],[data-k],[data-id],[data-edit],[data-del],#clearf,#exp,#imp,#csv");if(!t)return;
+  const t=e.target.closest("[data-type],[data-lieu],[data-move],[data-dim],[data-k],[data-id],[data-edit],[data-del],#clearf,#exp,#imp,#csv");if(!t)return;
+  if(t.dataset.type){state.type=t.dataset.type;state.filter=null;if(state.dim==="stats")state.dim="all";try{localStorage.setItem("biblio_type",state.type)}catch(e){}render();window.scrollTo(0,0);nav();return}
   if(t.dataset.lieu){state.lieu=t.dataset.lieu;state.filter=null;if(state.dim==="stats")state.dim="all";try{localStorage.setItem("biblio_lieu",state.lieu)}catch(e){}render();window.scrollTo(0,0);nav();return}
   if(t.dataset.move){const b=books().find(x=>x.id===t.dataset.move);const to=b.lieu==="Stockage"?"Bibliothèque":"Stockage";const {id:_,...rest}=b;saveOverride(b.id,{...rest,lieu:to,m:Date.now()});closeSheet();toast("Déplacé vers "+to.toLowerCase());return}
   if(t.dataset.dim){state.dim=t.dataset.dim;state.filter=null;render();window.scrollTo(0,0);nav()}
