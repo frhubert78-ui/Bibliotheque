@@ -21,6 +21,8 @@ jobs:
         with:
           node-version: 20
       - run: node tools/covers.mjs
+        env:
+          GB_KEY: ${{ secrets.GB_KEY }}
       - name: Enregistrer covers.json
         if: always()
         run: |
