@@ -484,30 +484,33 @@ const metaKey=b=>(b.titre+"|"+b.auteur).toLowerCase();
 const cleanT=t=>(t||"").replace(/\s*[–—-]\s*(tome|vol\.?)\s*\d+.*$/i,"").replace(/[«»"]/g,"").trim();
 const goodA=a=>a&&!/vérifier|disney|marvel|larousse|harrap|bescherelle|oxford|sgel|moulinex|anonyme|traduction/i.test(a);
 const PD=/Molière|Racine|Corneille|Maupassant|Zola|Hugo|Voltaire|Flaubert|Baudelaire|Musset|Marivaux|Beaumarchais|La Fontaine|Montaigne|La Bruyère|La Fayette|Prévost|Stendhal|Balzac|Chrétien de Troyes|Homère|Apulée|Platon|Mérimée|Gautier|Poe|Duras|Olympe de Gouges|Kafka|Ovide/i;
-async function gb(q,extra){const r=await fetch(`https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(q)}&maxResults=8&printType=books${extra||""}`);if(!r.ok)throw new Error("gb "+r.status);const j=await r.json();if(j.error)throw new Error("gb");return j.items||[]}
-async function fetchMeta(b,force){const k=metaKey(b),c=META[k];if(!force&&c&&c.v===2&&(c.img||c.t>Date.now()-864e5))return c;
- const m={t:Date.now(),v:2};const T=cleanT(b.titre),A=goodA(b.auteur)?b.auteur.split(/[,&(]/)[0].replace(/^(Madame|Abbé)\s+/,"").trim():"";
- if(PD.test(b.auteur||""))m.ws=`https://fr.wikisource.org/w/index.php?search=${encodeURIComponent(T+" "+(A||b.auteur))}`;
- let err=false;const q=`intitle:${T}`+(A?` inauthor:${A}`:"");
- try{let it=await gb(q);if(!it.length)it=await gb(T+(A?" "+A:""));
-  const score=v=>{const vi=v.volumeInfo||{};return (vi.language==="fr"?4:0)+(vi.imageLinks?3:0)+(vi.description?1:0)+((v.accessInfo||{}).viewability!=="NO_PAGES"?1:0)};
-  it.sort((x,y)=>score(y)-score(x));const v=it[0];
-  if(v){const vi=v.volumeInfo,ai=v.accessInfo||{};
-   if(vi.imageLinks)m.img=(vi.imageLinks.thumbnail||vi.imageLinks.smallThumbnail).replace("http:","https:").replace("&edge=curl","");
-   m.desc=(vi.description||"").replace(/<[^>]+>/g," ");m.link=vi.previewLink||vi.infoLink;
-   if(!m.desc){const d=it.find(x=>x.volumeInfo.description);if(d)m.desc=d.volumeInfo.description.replace(/<[^>]+>/g," ")}}
-  let pv=it.find(x=>(x.accessInfo||{}).embeddable&&["PARTIAL","ALL_PAGES"].includes(x.accessInfo.viewability));
-  if(!pv){const it2=await gb(q,"&filter=partial");pv=it2.find(x=>(x.accessInfo||{}).embeddable)||it2[0]}
-  if(pv){m.eid=pv.accessInfo&&pv.accessInfo.embeddable?pv.id:null;m.read=(pv.accessInfo||{}).webReaderLink||pv.volumeInfo.previewLink}
+async function gb(q,extra){const r=await fetch(`https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(q)}&maxResults=10&printType=books${extra||""}`);if(!r.ok)throw new Error("gb "+r.status);const j=await r.json();if(j.error)throw new Error("gb");return j.items||[]}
+const lastName=a=>{if(!goodA(a))return "";const x=a.split(/[,&(]/)[0].replace(/\b(Madame|Abbé|et)\b/g," ").trim().split(/\s+/);return x[x.length-1]||""};
+const norm2=s=>(s||"").normalize("NFD").replace(/[̀-ͯ]/g,"").toLowerCase().replace(/[^a-z0-9 ]/g," ").replace(/\s+/g," ").trim();
+async function fetchMeta(b,force,wantExtract){const k=metaKey(b),c=META[k];
+ if(!force&&c&&c.v===3&&(c.img||c.t>Date.now()-864e5)&&(!wantExtract||c.px))return c;
+ const m=c&&c.v===3?{...c}:{v:3};m.t=Date.now();const T=cleanT(b.titre),L=lastName(b.auteur);
+ if(PD.test(b.auteur||""))m.ws=`https://fr.wikisource.org/w/index.php?search=${encodeURIComponent(T+" "+(L||b.auteur))}`;
+ let err=false;const nT=norm2(T);
+ const score=v=>{const vi=v.volumeInfo||{},t=norm2(vi.title);return (t===nT?6:t.includes(nT)||nT.includes(t)?3:0)+(vi.language==="fr"?4:0)+(vi.imageLinks?3:0)+(vi.description?1:0)+(L&&(vi.authors||[]).join(" ").toLowerCase().includes(L.toLowerCase())?2:0)};
+ const qA=`intitle:"${T}"`+(L?` inauthor:"${L}"`:"");
+ try{if(!m.img||force){let all=[];
+   for(const [q,x] of [[qA,"&langRestrict=fr"],[qA,""],[T+(L?" "+L:""),""]]){const it=await gb(q,x);all=all.concat(it);if(it.some(v=>v.volumeInfo.imageLinks&&score(v)>=7))break}
+   all.sort((x,y)=>score(y)-score(x));const v=all.find(x=>x.volumeInfo.imageLinks)||all[0];
+   if(v){const vi=v.volumeInfo;if(vi.imageLinks)m.img=(vi.imageLinks.thumbnail||vi.imageLinks.smallThumbnail).replace("http:","https:").replace("&edge=curl","");
+    m.link=vi.previewLink||vi.infoLink;const d=[v,...all].find(x=>x.volumeInfo.description);m.desc=d?d.volumeInfo.description.replace(/<[^>]+>/g," "):""}
+   const pv=all.find(x=>(x.accessInfo||{}).embeddable&&["PARTIAL","ALL_PAGES"].includes(x.accessInfo.viewability)&&score(x)>=3);if(pv){m.eid=pv.id;m.px=1}}
+  if(wantExtract&&!m.px){const it2=await gb(qA,"&filter=partial");const pv=it2.filter(x=>score(x)>=3).sort((x,y)=>score(y)-score(x))[0];
+   if(pv){m.eid=(pv.accessInfo||{}).embeddable?pv.id:null;m.read=(pv.accessInfo||{}).webReaderLink||pv.volumeInfo.previewLink}m.px=1}
  }catch(e){err=true}
- if(!m.img){try{const r=await fetch(`https://openlibrary.org/search.json?title=${encodeURIComponent(T)}${A?"&author="+encodeURIComponent(A):""}&limit=5&fields=cover_i`).then(x=>x.json());
-  const d=(r.docs||[]).find(x=>x.cover_i);if(d)m.img=`https://covers.openlibrary.org/b/id/${d.cover_i}-L.jpg`}catch(e){err=true}}
- if(err&&!m.img&&!m.desc)return m; /* erreur réseau : on ne garde rien, on réessaiera */
+ if(!m.img){try{const r=await fetch(`https://openlibrary.org/search.json?title=${encodeURIComponent(T)}${L?"&author="+encodeURIComponent(L):""}&limit=8&fields=cover_i,language`).then(x=>x.json());
+  const docs=r.docs||[],d=docs.find(x=>x.cover_i&&(x.language||[]).includes("fre"))||docs.find(x=>x.cover_i);if(d)m.img=`https://covers.openlibrary.org/b/id/${d.cover_i}-L.jpg`}catch(e){err=true}}
+ if(err&&!m.img&&!m.desc)return m;
  META[k]=m;saveMeta();return m}
 /* recherche des couvertures en arrière-plan */
 const QUEUE=[];let qRun=0;
-function prefetch(list){for(const b of list){const c=META[metaKey(b)];if(!(c&&c.v===2&&(c.img||c.t>Date.now()-864e5))&&!QUEUE.includes(b))QUEUE.push(b)}pump()}
-function pump(){while(qRun<2&&QUEUE.length&&navigator.onLine!==false){const b=QUEUE.shift();qRun++;fetchMeta(b).catch(()=>{}).finally(()=>setTimeout(()=>{qRun--;pump()},350))}}
+function prefetch(list){for(const b of list){const c=META[metaKey(b)];if(!(c&&c.v===3&&(c.img||c.t>Date.now()-864e5))&&!QUEUE.includes(b))QUEUE.push(b)}pump()}
+function pump(){while(qRun<1&&QUEUE.length&&navigator.onLine!==false){const b=QUEUE.shift();qRun++;fetchMeta(b).catch(()=>{}).finally(()=>setTimeout(()=>{qRun--;pump()},700))}}
 function extHTML(m){if(!m)return `<div class="ext"><p class="src">Recherche du résumé et de l'extrait…</p></div>`;
  const d=m.desc||"",short=d.length>380?d.slice(0,380).replace(/\s+\S*$/,"")+"…":d;
  return `<div class="ext"><h3>Résumé</h3>${d?`<p id="rs">${esc(short)}</p>${d.length>380?`<button class="more" id="rsm">Lire la suite</button>`:""}`:`<p class="src">Pas de résumé trouvé pour ce livre.</p>`}
@@ -530,7 +533,7 @@ function openBook(b,inner){const L=look(b),cv=document.getElementById("cv"),pg=d
  cv.innerHTML=`<b>${esc(b.titre)}</b><small>${esc(b.auteur)}</small><img alt=""><span class="hint">Touche la couverture pour l'ouvrir</span>`;
  pg.dataset.mk=k;pg.innerHTML=inner+`<div id="extw">${extHTML(META[k]&&META[k].t?META[k]:null)}</div>`;pg.scrollTop=0;ov.classList.remove("reveal");ov.classList.add("open");
  const show=m=>{if(pg.dataset.mk!==k)return;const im=cv.querySelector("img");if(m.img&&im&&!im.src){im.onload=()=>{if(im.naturalWidth>40)im.classList.add("ok")};im.src=m.img}document.getElementById("extw").innerHTML=extHTML(m)};
- if(META[k]&&META[k].img)show(META[k]);fetchMeta(b,!(META[k]&&META[k].img)&&!(META[k]&&META[k].t>Date.now()-6e5)).then(show);
+ if(META[k]&&META[k].img)show(META[k]);fetchMeta(b,false,true).then(show);
  if(!sheetOpen){sheetOpen=true;try{history.pushState(snap(true),"")}catch(e){}}}
 ov.addEventListener("click",e=>{if(e.target===ov)closeSheet();else if(e.target.closest("#cv"))ov.classList.add("reveal")});
 let rzt;addEventListener("resize",()=>{clearTimeout(rzt);rzt=setTimeout(()=>{if(shelfMode)render()},200)});
