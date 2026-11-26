@@ -21,13 +21,13 @@ const isFr = d => { const w = norm(d).split(" "); const fr = w.filter(x => /^(le
 const okDesc = d => { d = (d || "").trim(); return d.length >= 80 && isFr(d) && !/^analyse\s*:/i.test(d); };
 const GBKEY = process.env.GB_KEY || "";
 const UA = { headers: { "User-Agent": "MaBibliotheque/1.0 (github.com/frhubert78-ui/Bibliotheque)" } };
-let gbCalls = 0, gbFail = 0;
+let gbCalls = 0, gbFail = 0, gbStreak = 0;
 async function gb(q, extra = "") {
-  if (!GBKEY) return null;
+  if (!GBKEY || gbStreak >= 3) return null; // quota du jour épuisé : on arrête Google jusqu'au prochain passage
   const url = `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(q)}&maxResults=15&printType=books${extra}&key=${GBKEY}`;
   for (let a = 0; a < 3; a++) { gbCalls++; await sleep(400);
-    try { const r = await fetch(url); if (r.status === 429 || r.status >= 500) { await sleep(10000 * (a + 1)); continue; } const j = await r.json(); if (j.error) { gbFail++; return null; } return j.items || []; } catch (e) { await sleep(3000); } }
-  gbFail++; return null;
+    try { const r = await fetch(url); if (r.status === 429 || r.status >= 500) { await sleep(10000 * (a + 1)); continue; } const j = await r.json(); if (j.error) { gbFail++; gbStreak++; return null; } gbStreak = 0; return j.items || []; } catch (e) { await sleep(3000); } }
+  gbFail++; gbStreak++; return null;
 }
 let olErr = false, olFail = 0;
 async function olGet(u) { for (let a = 0; a < 4; a++) { try { await sleep(1100); const r = await fetch(u, UA); if (r.ok) return await r.json(); await sleep(r.status === 429 || r.status >= 500 ? 15000 * (a + 1) : 4000); } catch (e) { await sleep(5000); } } olErr = true; olFail++; return null; }
@@ -99,7 +99,7 @@ for (const b of books) {
   }
   if (ok) m.px = 1;
   // En cas de panne Google, on garde l'ancienne fiche plutôt qu'une fiche vide.
-  out[k] = ok || !old ? m : old;
+  out[k] = ok || !old || (m.img && !old.img) ? m : old;
   done++; if (out[k].img) found++;
   console.log(`${out[k].img ? "✔" : "✘"} ${b.titre} — ${b.auteur}`);
   if (done % 20 === 0) fs.writeFileSync("covers.json", JSON.stringify(out));
