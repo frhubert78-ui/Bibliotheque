@@ -1,5 +1,5 @@
 // Service worker – Ma Bibliothèque
-const CACHE = "biblio-v2";
+const CACHE = "biblio-v3";
 const SHELL = ["./", "./index.html", "./fond.jpg", "./manifest.json", "./icon-192.png", "./icon-512.png", "./icon-maskable-512.png", "./apple-touch-icon.png"];
 
 self.addEventListener("install", e => {
