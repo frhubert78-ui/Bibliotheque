@@ -29,7 +29,8 @@ async function gb(q, extra = "") {
     try { const r = await fetch(url); if (r.status === 429 || r.status >= 500) { await sleep(10000 * (a + 1)); continue; } const j = await r.json(); if (j.error) { gbFail++; return null; } return j.items || []; } catch (e) { await sleep(3000); } }
   gbFail++; return null;
 }
-async function olGet(u) { for (let a = 0; a < 3; a++) { try { await sleep(700); const r = await fetch(u, UA); if (r.ok) return await r.json(); await sleep(5000); } catch (e) { await sleep(3000); } } return null; }
+let olErr = false, olFail = 0;
+async function olGet(u) { for (let a = 0; a < 4; a++) { try { await sleep(1100); const r = await fetch(u, UA); if (r.ok) return await r.json(); await sleep(r.status === 429 || r.status >= 500 ? 15000 * (a + 1) : 4000); } catch (e) { await sleep(5000); } } olErr = true; olFail++; return null; }
 
 // Un résultat est accepté seulement s'il correspond vraiment au livre.
 function matcher(b) {
@@ -42,7 +43,7 @@ function matcher(b) {
     let t;
     if (tome) t = cover(tome, full) >= 0.75 && (cover(series, full) >= 0.5 || cover(T, full) >= 0.8);
     else t = cover(T, full) >= 0.85 && cover(title, T) >= 0.6;
-    if (t && tnum && !new RegExp("\\b" + tnum + "\\b").test(norm(full))) t = false;
+    if (t && tnum && !new RegExp("\\b0*" + tnum + "\\b").test(norm(full))) t = false;
     if (!t) return 0;
     const a = norm((authors || []).join(" "));
     if (L && !a.includes(L)) return 0;
@@ -70,14 +71,16 @@ async function ol(b, T, L, match) {
 
 let done = 0, found = 0; const START = Date.now();
 for (const b of books) {
-  if (Date.now() - START > 45 * 60000) { console.log("Temps écoulé : la suite au prochain passage."); break; }
+  if (Date.now() - START > 50 * 60000) { console.log("Temps écoulé : la suite au prochain passage."); break; }
   const k = key(b), old = out[k];
   if (old && old.v === VER && (old.px || !GBKEY)) { if (old.img) found++; continue; }
   if (/illisible/i.test(b.titre)) { out[k] = { v: VER, px: 1 }; continue; }
   const T = cleanT(b.titre), L = lastName(b.auteur), match = matcher(b);
   const m = { v: VER };
   let ok = !!GBKEY;
+  olErr = false;
   const o = await ol(b, T, L, match); if (o) Object.assign(m, o);
+  if (olErr) ok = false; // Open Library indisponible : on réessaiera au prochain passage
   if (GBKEY) {
     const sv = v => { const vi = v.volumeInfo || {}; const s = match(vi.title, vi.subtitle, vi.authors, vi.language); return s ? s + (vi.imageLinks ? 2 : 0) + (okDesc(vi.description) ? 1 : 0) : 0; };
     const qA = `intitle:"${T.split(/\s*[–—:]\s*/).pop()}"` + (L ? ` inauthor:"${L}"` : "");
@@ -102,4 +105,4 @@ for (const b of books) {
   if (done % 20 === 0) fs.writeFileSync("covers.json", JSON.stringify(out));
 }
 fs.writeFileSync("covers.json", JSON.stringify(out));
-console.log(`\nLivres : ${books.length} · avec couverture : ${found} · appels Google : ${gbCalls} (échecs : ${gbFail})`);
+console.log(`\nLivres : ${books.length} · avec couverture : ${found} · appels Google : ${gbCalls} (échecs : ${gbFail}) · échecs Open Library : ${olFail}`);
