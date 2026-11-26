@@ -42,7 +42,7 @@ function matcher(b) {
     const full = (title || "") + " " + (sub || "");
     let t;
     if (tome) t = cover(tome, full) >= 0.75 && (cover(series, full) >= 0.5 || cover(T, full) >= 0.8);
-    else t = cover(T, full) >= 0.85 && cover(title, T) >= 0.6;
+    else t = cover(T, full) >= 0.85 && (L || cover(title, T) >= 0.6); // avec un auteur reconnu, le titre peut contenir la série ou le tome
     if (t && tnum && !new RegExp("\\b0*" + tnum + "\\b").test(norm(full))) t = false;
     if (!t) return 0;
     const a = norm((authors || []).join(" "));
@@ -59,7 +59,6 @@ async function ol(b, T, L, match) {
   if (!docs.some(d => d.cover_i && match(d.title, d.subtitle, d.author_name, (d.language || []).includes("fre") ? "fre" : ""))) {
     const r2 = await olGet(`https://openlibrary.org/search.json?q=${encodeURIComponent(T + (L ? " " + L : ""))}${f}`); docs = docs.concat((r2 && r2.docs) || []); }
   const sc = d => { const m = match(d.title, d.subtitle, d.author_name, (d.language || []).includes("fre") ? "fre" : ""); return m ? m + (d.cover_i ? 2 : 0) : 0; };
-  if (process.env.DEBUG_OL && !docs.some(d => sc(d) > 0)) console.log("   OL:", JSON.stringify(docs.slice(0, 4).map(d => [d.title, d.subtitle, (d.author_name || []).join("/"), d.language])));
   docs = docs.filter(d => sc(d) > 0).sort((a, b) => sc(b) - sc(a));
   const best = docs.find(d => d.cover_i) || docs[0]; if (!best) return null;
   const o = {}; if (best.cover_i) o.img = `https://covers.openlibrary.org/b/id/${best.cover_i}-L.jpg`;

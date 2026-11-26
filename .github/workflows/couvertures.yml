@@ -23,7 +23,6 @@ jobs:
       - run: node tools/covers.mjs
         env:
           GB_KEY: ${{ secrets.GB_KEY }}
-          DEBUG_OL: 1
       - name: Enregistrer covers.json
         if: always()
         run: |
