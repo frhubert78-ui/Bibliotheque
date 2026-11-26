@@ -1,5 +1,6 @@
 // Recherche des couvertures, résumés et extraits pour tous les livres de l'appli.
 // Lancé automatiquement par GitHub Actions ; écrit covers.json à la racine.
+// Clé Google Books (secret GB_KEY) ajoutée le 26/11/2026.
 import fs from "node:fs";
 const html = fs.readFileSync("index.html", "utf8");
 const grab = n => { const i = html.indexOf("const " + n + " = ["); const j = html.indexOf("].map(", i); return eval(html.slice(i + ("const " + n + " = ").length, j + 1)); };
